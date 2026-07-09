@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以 3D 衛星測距球面理解 GPS 三邊測量、經緯度與海拔。">
+    <meta name="theme-color" content="#06101e">
+    <title>GPS 3D 定位｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/gps.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script defer src="./assets/gps.js"></script>
+</head>
+<body class="simulator-page">
+    <div class="simulator-shell">
+        <header class="topbar">
+            <a class="home-link" href="../" aria-label="返回工具總頁">← 工具總頁</a>
+
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 01</p>
+                <strong>GPS 3D POSITIONING</strong>
+            </div>
+
+            <div class="satellite-count">
+                <label for="sat-count">啟用衛星</label>
+                <select id="sat-count">
+                    <option value="1">1 顆</option>
+                    <option value="2">2 顆</option>
+                    <option value="3" selected>3 顆｜基本定位</option>
+                    <option value="4">4 顆｜時間校正</option>
+                    <option value="5">5 顆｜高精度</option>
+                </select>
+            </div>
+        </header>
+
+        <main class="simulator-layout">
+            <section class="stage" aria-label="GPS 三維模擬視窗">
+                <div id="canvas-container"></div>
+                <div class="stage-guide">左鍵旋轉 · 滾輪縮放 · 右鍵平移</div>
+                <button class="button formula-button" id="btn-formula" type="button">
+                    <span aria-hidden="true">∑</span>
+                    <span class="button-label">公式與原理</span>
+                </button>
+                <div class="target-chip">TARGET / <strong id="stage-target-name">玉山 3952 M</strong></div>
+                <div class="imagery-credit">EARTH LIGHTS / SATELLITE COMPOSITE</div>
+
+                <section class="location-reveal" id="location-reveal" aria-live="assertive" aria-hidden="true">
+                    <p class="location-reveal__eyebrow">POSITION FIXED / 定位完成</p>
+                    <h2 id="reveal-name">玉山</h2>
+                    <p class="location-reveal__region" id="reveal-region">臺灣 · 南投縣</p>
+                    <div class="location-reveal__grid">
+                        <div>
+                            <span>LATITUDE</span>
+                            <strong id="reveal-lat">23.470000° N</strong>
+                        </div>
+                        <div>
+                            <span>LONGITUDE</span>
+                            <strong id="reveal-lon">120.957000° E</strong>
+                        </div>
+                        <div>
+                            <span>ELEVATION</span>
+                            <strong id="reveal-alt">3,952 m</strong>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <aside class="control-panel" aria-label="定位實驗控制面板">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Trilateration console</p>
+                        <h1>GPS 定位實驗室</h1>
+                    </div>
+                    <span class="panel-step">STEP 01—03</span>
+                </div>
+
+                <div class="target-selector">
+                    <label for="target-select">
+                        <span>解算目標 / TARGET</span>
+                        <strong id="target-region">臺灣 · 南投縣 · 山峰 · 海拔 3,952 m</strong>
+                    </label>
+                    <select id="target-select" aria-label="選擇解算目標"></select>
+                </div>
+
+                <section class="satellites" id="sats-container" aria-label="衛星測距控制"></section>
+
+                <section class="result-panel" aria-labelledby="result-title">
+                    <div class="result-panel__header">
+                        <p class="result-label" id="result-title">解算目標座標 / 玉山</p>
+                        <span class="status-badge" id="status-badge" data-state="error" role="status">訊號未交集</span>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span>緯度｜度分秒</span>
+                            <output id="out-lat">--° --' --" -</output>
+                        </div>
+                        <div class="result-item">
+                            <span>海拔高度</span>
+                            <output id="out-alt">-- km</output>
+                        </div>
+                        <div class="result-item">
+                            <span>經度｜度分秒</span>
+                            <output id="out-lon-dms">--° --' --" -</output>
+                        </div>
+                        <div class="result-item">
+                            <span>經度｜24 小時制</span>
+                            <output id="out-lon-time">--h --m --s</output>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="panel-actions">
+                    <button class="button" id="btn-wireframe" type="button" aria-pressed="true">顯示實體球面</button>
+                    <button class="button button--primary" id="btn-auto" type="button">自動解答定位</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-formula" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+            <header class="modal__header">
+                <h2 id="formula-title">GPS 三邊測量｜Trilateration</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉公式說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>衛星導航的核心概念是「時間就是距離」。量測無線電波從衛星到接收器的傳輸時間，即可估算兩者距離。</p>
+
+                <div class="formula-block">d<sub>i</sub> = c × Δt<sub>i</sub></div>
+
+                <p>每一筆距離代表接收器位於一個以衛星為中心的球面上。三維位置可由多個球面約束共同確定：</p>
+
+                <div class="formula-block">
+                    (X − x<sub>1</sub>)² + (Y − y<sub>1</sub>)² + (Z − z<sub>1</sub>)² = d<sub>1</sub>²<br>
+                    (X − x<sub>2</sub>)² + (Y − y<sub>2</sub>)² + (Z − z<sub>2</sub>)² = d<sub>2</sub>²<br>
+                    (X − x<sub>3</sub>)² + (Y − y<sub>3</sub>)² + (Z − z<sub>3</sub>)² = d<sub>3</sub>²
+                </div>
+
+                <ul class="principle-list">
+                    <li><strong>1 顆衛星：</strong>定位範圍是一個球面。</li>
+                    <li><strong>2 顆衛星：</strong>兩個球面交集形成圓。</li>
+                    <li><strong>3 顆衛星：</strong>交集縮小至兩個候選點，可配合地球表面排除不合理解。</li>
+                    <li><strong>4 顆衛星：</strong>實際 GPS 用第四個觀測值解接收器時鐘偏差。</li>
+                    <li><strong>5 顆以上：</strong>可利用冗餘觀測與最小平方法改善穩定性。</li>
+                </ul>
+
+                <p class="teaching-note"><strong>教學模式說明：</strong>本頁以十一個預設地理目標示範測距球面。成功條件是各測距接近所選目標，不等同完整的導航接收器解算；城市海拔為代表點近似值。</p>
+                <p class="source-note">地理座標參考 <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a>；地球夜燈影像概念參考 <a href="https://blackmarble.gsfc.nasa.gov/" target="_blank" rel="noreferrer">NASA Black Marble</a>。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>了解</button>
+            </footer>
+        </section>
+    </div>
+
+    <noscript>此互動工具需要啟用 JavaScript。</noscript>
+</body>
+</html>
