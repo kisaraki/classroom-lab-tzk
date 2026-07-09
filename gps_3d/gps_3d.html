@@ -15,7 +15,7 @@
 <body class="simulator-page">
     <div class="simulator-shell">
         <header class="topbar">
-            <a class="home-link" href="../" aria-label="返回工具總頁">← 工具總頁</a>
+            <a class="home-link" href="../index.html" aria-label="返回工具總頁">← 工具總頁</a>
 
             <div class="page-identity">
                 <p>CLASSROOM LAB / EXPERIMENT 01</p>
@@ -38,10 +38,16 @@
             <section class="stage" aria-label="GPS 三維模擬視窗">
                 <div id="canvas-container"></div>
                 <div class="stage-guide">左鍵旋轉 · 滾輪縮放 · 右鍵平移</div>
-                <button class="button formula-button" id="btn-formula" type="button">
-                    <span aria-hidden="true">∑</span>
-                    <span class="button-label">公式與原理</span>
-                </button>
+                <div class="stage-tools">
+                    <button class="button" id="btn-guide" type="button">
+                        <span aria-hidden="true">?</span>
+                        <span class="button-label">操作說明</span>
+                    </button>
+                    <button class="button" id="btn-formula" type="button">
+                        <span aria-hidden="true">∑</span>
+                        <span class="button-label">公式與原理</span>
+                    </button>
+                </div>
                 <div class="target-chip">TARGET / <strong id="stage-target-name">玉山 3952 M</strong></div>
                 <div class="imagery-credit">EARTH LIGHTS / SATELLITE COMPOSITE</div>
 
@@ -119,6 +125,48 @@
         </main>
     </div>
 
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header">
+                <h2 id="guide-title">GPS 解算操作說明｜How to Solve</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉操作說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>依照下列步驟調整衛星測距，觀察多個訊號球面如何逐步鎖定地球上的目標位置。</p>
+
+                <ol class="guide-step-list">
+                    <li>
+                        <strong>選擇解算目標</strong>
+                        <span>從目標選單選擇地點，系統會載入該處的經緯度與海拔。</span>
+                    </li>
+                    <li>
+                        <strong>設定衛星數量</strong>
+                        <span>至少啟用 3 顆衛星；4 顆以上可觀察冗餘觀測效果。</span>
+                    </li>
+                    <li>
+                        <strong>設定衛星位置</strong>
+                        <span>修改各衛星的緯度 N/S 與經度 E/W，觀察衛星位置和測距球面的變化；軌道高度固定為 20,200 km。</span>
+                    </li>
+                    <li>
+                        <strong>調整各星測距</strong>
+                        <span>拖動每顆衛星的距離滑桿，使誤差 Δ 逐漸接近 0 km。</span>
+                    </li>
+                    <li>
+                        <strong>完成定位</strong>
+                        <span>至少 3 顆衛星的誤差皆轉為綠色後，即顯示經緯度與海拔。</span>
+                    </li>
+                </ol>
+
+                <p class="teaching-note"><strong>快速示範：</strong>按下右側面板底部的「自動解答定位」，即可觀看測距球面自動收斂並完成定位。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>開始操作</button>
+            </footer>
+        </section>
+    </div>
+
     <div class="modal" id="modal-formula" aria-hidden="true">
         <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
             <header class="modal__header">
@@ -146,6 +194,24 @@
                     <li><strong>4 顆衛星：</strong>實際 GPS 用第四個觀測值解接收器時鐘偏差。</li>
                     <li><strong>5 顆以上：</strong>可利用冗餘觀測與最小平方法改善穩定性。</li>
                 </ul>
+
+                <section class="orbit-note" aria-labelledby="orbit-title">
+                    <h3 id="orbit-title">衛星與同步軌道</h3>
+                    <div class="orbit-comparison">
+                        <article>
+                            <span>GPS / SEMI-SYNCHRONOUS</span>
+                            <strong>半同步中地球軌道</strong>
+                            <p>GPS 衛星位於約 20,200 km 高的中地球軌道，每天繞地球約兩圈。軌道週期約為半個恆星日，因此稱為半同步軌道。</p>
+                        </article>
+                        <article>
+                            <span>GEO / GEOSYNCHRONOUS</span>
+                            <strong>地球同步與靜止軌道</strong>
+                            <p>地球同步軌道週期約 23 小時 56 分。若軌道同時為圓形、位於赤道上且順行，衛星看起來會固定在同一經度上空，稱為地球靜止軌道，高度約 35,786 km。</p>
+                        </article>
+                    </div>
+                    <p class="orbit-note__summary">GPS 並非地球靜止衛星。多個傾斜軌道面讓衛星持續越過不同區域，可提供全球與高緯度地區較好的覆蓋及定位幾何。</p>
+                    <p class="source-note">軌道資料參考 <a href="https://archive.gps.gov/systems/gps/space/" target="_blank" rel="noreferrer">GPS.gov Space Segment</a> 與 <a href="https://science.nasa.gov/learn/basics-of-space-flight/chapter5-1/" target="_blank" rel="noreferrer">NASA Planetary Orbits</a>。</p>
+                </section>
 
                 <p class="teaching-note"><strong>教學模式說明：</strong>本頁以十一個預設地理目標示範測距球面。成功條件是各測距接近所選目標，不等同完整的導航接收器解算；城市海拔為代表點近似值。</p>
                 <p class="source-note">地理座標參考 <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a>；地球夜燈影像概念參考 <a href="https://blackmarble.gsfc.nasa.gov/" target="_blank" rel="noreferrer">NASA Black Marble</a>。</p>

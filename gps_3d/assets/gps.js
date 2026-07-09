@@ -752,34 +752,50 @@
         animateAnswer();
     });
 
-    const modal = document.getElementById("modal-formula");
-    const modalOpenButton = document.getElementById("btn-formula");
-    const modalCloseButtons = modal.querySelectorAll("[data-close-modal]");
-
-    function openModal() {
-        modal.classList.add("is-open");
-        modal.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-        modal.querySelector(".modal__close").focus();
-    }
-
-    function closeModal() {
+    function closeModal(modal, triggerButton, restoreFocus = true) {
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
         document.body.style.overflow = "";
-        modalOpenButton.focus();
+        if (restoreFocus) {
+            triggerButton.focus();
+        }
     }
 
-    modalOpenButton.addEventListener("click", openModal);
-    modalCloseButtons.forEach((button) => button.addEventListener("click", closeModal));
-    modal.addEventListener("click", (event) => {
-        if (event.target === modal) {
-            closeModal();
-        }
-    });
+    function setupModal(modalId, triggerId) {
+        const modal = document.getElementById(modalId);
+        const triggerButton = document.getElementById(triggerId);
+        const closeButtons = modal.querySelectorAll("[data-close-modal]");
+
+        triggerButton.addEventListener("click", () => {
+            modal.classList.add("is-open");
+            modal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            modal.querySelector(".modal__close").focus();
+        });
+        closeButtons.forEach((button) => {
+            button.addEventListener("click", () => closeModal(modal, triggerButton));
+        });
+        modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+                closeModal(modal, triggerButton);
+            }
+        });
+
+        return { modal, triggerButton };
+    }
+
+    const modalControllers = [
+        setupModal("modal-guide", "btn-guide"),
+        setupModal("modal-formula", "btn-formula")
+    ];
+
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && modal.classList.contains("is-open")) {
-            closeModal();
+        if (event.key !== "Escape") {
+            return;
+        }
+        const openController = modalControllers.find(({ modal }) => modal.classList.contains("is-open"));
+        if (openController) {
+            closeModal(openController.modal, openController.triggerButton);
         }
     });
 

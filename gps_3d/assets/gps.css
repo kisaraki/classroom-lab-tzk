@@ -150,10 +150,12 @@ body.simulator-page {
     content: "";
 }
 
-.formula-button {
+.stage-tools {
     position: absolute;
     top: 1rem;
     right: 1rem;
+    display: flex;
+    gap: 0.5rem;
 }
 
 .target-chip {
@@ -663,6 +665,118 @@ body.simulator-page {
     margin-top: 0.45rem;
 }
 
+.orbit-note {
+    margin: 1.1rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+}
+
+.orbit-note h3 {
+    margin: 0 0 0.75rem;
+    color: var(--cyan);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.orbit-comparison {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.orbit-comparison article {
+    padding: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.orbit-comparison span,
+.orbit-comparison strong {
+    display: block;
+}
+
+.orbit-comparison span {
+    margin-bottom: 0.25rem;
+    color: var(--lime);
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+}
+
+.orbit-comparison strong {
+    color: var(--text);
+    font-size: 0.78rem;
+}
+
+.orbit-comparison p,
+.orbit-note__summary {
+    margin-bottom: 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    line-height: 1.7;
+}
+
+.orbit-note__summary {
+    padding: 0.7rem 0.8rem;
+    border-left: 2px solid var(--amber);
+    background: rgba(255, 199, 90, 0.045);
+}
+
+.guide-step-list {
+    display: grid;
+    margin: 1rem 0;
+    padding: 0;
+    counter-reset: guide-step;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    list-style: none;
+}
+
+.guide-step-list li {
+    position: relative;
+    min-height: 108px;
+    padding: 1rem 1rem 1rem 3.15rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    counter-increment: guide-step;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.guide-step-list li::before {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    color: var(--lime);
+    content: "0" counter(guide-step);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.guide-step-list li:last-child:nth-child(odd) {
+    min-height: auto;
+    grid-column: 1 / -1;
+}
+
+.guide-step-list strong,
+.guide-step-list span {
+    display: block;
+}
+
+.guide-step-list strong {
+    margin-bottom: 0.3rem;
+    color: var(--text);
+    font-size: 0.82rem;
+}
+
+.guide-step-list span {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.65;
+}
+
 .teaching-note {
     padding: 0.75rem 0.9rem;
     border: 1px solid rgba(255, 199, 90, 0.25);
@@ -743,7 +857,7 @@ body.simulator-page {
         max-width: none;
     }
 
-    .formula-button {
+    .stage-tools {
         top: auto;
         right: 1rem;
         bottom: 1rem;
@@ -765,7 +879,12 @@ body.simulator-page {
         grid-column: 1 / -1;
     }
 
-    .formula-button .button-label {
+    .stage-tools .button {
+        width: 42px;
+        padding-inline: 0;
+    }
+
+    .stage-tools .button-label {
         display: none;
     }
 
@@ -774,6 +893,18 @@ body.simulator-page {
     }
 
     .target-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-step-list {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-step-list li:last-child:nth-child(odd) {
+        grid-column: auto;
+    }
+
+    .orbit-comparison {
         grid-template-columns: 1fr;
     }
 
