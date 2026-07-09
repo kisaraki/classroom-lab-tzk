@@ -9,12 +9,14 @@
 
 - [Classroom Lab 工具總頁](https://kisaraki.github.io/classroom-lab-tzk/)
 - [GPS定位實驗室](https://kisaraki.github.io/classroom-lab-tzk/gps_3d/gps_3d.html)
+- [拋體運動實驗室](https://kisaraki.github.io/classroom-lab-tzk/projectilemotion/projectilemotion.html)
 
 ## 目前成果
 
 | 工具 | 狀態 | 路徑 | 用途 |
 | --- | --- | --- | --- |
 | GPS定位實驗室 | 可使用 | `gps_3d/gps_3d.html` | 以互動式 3D 地球、衛星與測距球面示範 GPS 定位概念 |
+| 拋體運動實驗室 | 可使用 | `projectilemotion/projectilemotion.html` | 以互動式方格紙示範斜面拋體運動、角度關係、飛行時間、落點與海拔變化 |
 | 後續教學工具 | 預留 | 由 `index.html` 新增入口 | 依「一項工具、一個子資料夾」原則擴充 |
 
 GPS定位實驗室目前包括：
@@ -27,15 +29,38 @@ GPS定位實驗室目前包括：
 - GPS 半同步軌道、地球同步軌道與地球靜止軌道的教學內容。
 - 桌面與行動裝置的響應式介面。
 
+拋體運動實驗室目前包括：
+
+- 純 HTML/CSS/JavaScript 製作，可直接部署到 GitHub Pages。
+- 可調整初速、發射角、斜面角與發射點海拔；預設值為初速 50 m/s、發射角 45°、斜面角 0°、發射點海拔 0 m。
+- 斜面角可在 -90° 到 90° 之間調整，並對垂直斜面與大角度斜面做繪圖防護。
+- 以 Canvas 即時繪製方格紙、斜面、發射向量、P 點水平參考線、拋物線軌跡、落點與 P→T 斜面直線距離。
+- 在方格紙下方顯示解算結果，包括飛行時間、水平距離 X、升降高度 Y、P→T 斜面直線距離、最高點海拔與落點海拔。
+- 右側面板即時顯示 8 個國中程度公式卡，每列 2 個公式區塊，共 4 列呈現，滑桿變動時同步更新代入數值。
+- 「觀察重點」顯示在方格紙區，方便一邊操作一邊對照角度與高度變化。
+- 獨立的「操作說明」與「公式與原理」視窗。
+- 與網站既有暗色、玻璃面板、深空科技風格一致的響應式介面。
+
 ## 使用方式
 
-1. 從工具總頁進入「GPS定位實驗室」。
-2. 選擇解算目標與衛星數量。
-3. 設定各衛星的緯度與經度。
-4. 調整各衛星的測距值，觀察球面交會情形。
-5. 當誤差進入容許範圍時，查看定位結果與地理資訊。
+從工具總頁進入指定實驗後，依各頁面的操作說明進行探索。
 
-頁面內的「操作說明」提供完整步驟；「公式與原理」則說明三邊定位與衛星軌道概念。
+GPS定位實驗室：
+
+1. 選擇解算目標與衛星數量。
+2. 設定各衛星的緯度與經度。
+3. 調整各衛星的測距值，觀察球面交會情形。
+4. 當誤差進入容許範圍時，查看定位結果與地理資訊。
+
+拋體運動實驗室：
+
+1. 調整初速、發射角、斜面角與發射點海拔。
+2. 觀察 Canvas 中的發射向量、P 點水平參考線、斜面、拋物線軌跡與落點。
+3. 查看方格紙下方的飛行時間、水平距離 X、升降高度 Y、P→T 斜面直線距離、最高點海拔與落點海拔。
+4. 對照右側「即時計算公式」區，觀察參數變化如何影響各步公式。
+5. 開啟「公式與原理」查看模型假設與教學限制。
+
+各工具頁面內的「操作說明」提供完整步驟；「公式與原理」則整理對應的教學概念。
 
 ## 技術架構
 
@@ -61,17 +86,11 @@ GPS定位實驗室目前包括：
 │  └─ assets/
 │     ├─ gps.css                      # GPS 工具專用樣式
 │     └─ gps.js                       # 3D 場景、資料與互動邏輯
-├─ .codex/
-│  └─ skills/
-│     ├─ extend-classroom-lab/
-│     │  ├─ SKILL.md                  # 專案維護與擴充規範
-│     │  └─ agents/
-│     │     └─ openai.yaml
-│     └─ publish-to-github/
-│        ├─ SKILL.md                  # 安全發布 Skill 入口
-│        └─ agents/
-│           └─ openai.yaml
-├─ publish2Githubs.md                 # GitHub 上傳、風險閘門與驗證流程
+├─ projectilemotion/
+│  ├─ projectilemotion.html           # 拋體運動實驗室
+│  └─ assets/
+│     ├─ projectilemotion.css         # 拋體運動工具專用樣式
+│     └─ projectilemotion.js          # Canvas 繪圖、參數控制與公式解算
 ├─ .nojekyll                          # GitHub Pages 直接發布靜態檔案
 └─ README.md
 ```
@@ -88,8 +107,9 @@ py -m http.server 8000
 
 - 工具總頁：<http://localhost:8000/>
 - GPS定位實驗室：<http://localhost:8000/gps_3d/gps_3d.html>
+- 拋體運動實驗室：<http://localhost:8000/projectilemotion/projectilemotion.html>
 
-GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完整使用時需要網路連線。
+GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完整使用時需要網路連線。拋體運動頁面不依賴外部 CDN。
 
 ## GitHub Pages 部署
 
@@ -112,18 +132,17 @@ GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完
 6. 在工具頁提供回到 `../index.html` 的導覽。
 7. 更新本 README 的成果表與專案結構，並驗證 GitHub Pages 子路徑。
 
-更完整的實作與驗證規則請參考 [專案擴充 Skill](.codex/skills/extend-classroom-lab/SKILL.md)。
-
 ## 資料來源與教學限制
 
 - 地球日間與夜間燈光紋理由 [Three.js 範例資源](https://threejs.org/examples/#webgl_materials_normalmap)載入；夜間燈光概念可參考 [NASA Black Marble](https://blackmarble.gsfc.nasa.gov/)。
 - 目標位置資料參考 [GeoNames](https://www.geonames.org/) 等公開地理資料。城市海拔是代表點數值，不代表整個行政區皆為相同高度。
 - 衛星軌道資料可參考 [GPS.gov](https://www.gps.gov/systems/gps/space/) 與 [NASA](https://earthobservatory.nasa.gov/features/OrbitsCatalog)。
 - 本工具用於課堂示範三邊定位與幾何關係，不是實際 GNSS 接收器，也未模擬電離層、時鐘偏差、多路徑或完整最小平方法解算。
+- 拋體運動實驗室採用理想模型，忽略空氣阻力、風、彈體旋轉、地球曲率與真實外彈道，只用於課堂說明等加速度運動與斜面交會。角度顯示一律使用度；θ = ±90° 時斜面為垂直線，公式中的 `cos(θ)` 與 `tan(θ)` 不適用，因此頁面會以教學防護方式顯示為無有效交會。
 
 ## 貢獻
 
-提交新工具或修正時，請維持總頁入口、工具資料夾邊界、相對路徑及響應式介面，並依 `SKILL.md` 的檢查表完成驗證。
+提交新工具或修正時，請維持總頁入口、工具資料夾邊界、相對路徑及響應式介面，並依上述擴充規則完成驗證。
 
 ## 授權
 

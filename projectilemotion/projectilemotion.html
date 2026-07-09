@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以互動式畫布探索斜面上的拋體運動，觀察初速、角度、斜面與高度如何影響飛行時間與落點。">
+    <meta name="theme-color" content="#06101e">
+    <title>拋體運動實驗室｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/projectilemotion.css">
+    <script defer src="./assets/projectilemotion.js"></script>
+</head>
+<body class="projectile-page">
+    <div class="projectile-shell">
+        <header class="topbar">
+            <a class="home-link" href="../index.html" aria-label="返回工具總頁">← 工具總頁</a>
+
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 02</p>
+                <strong>PROJECTILE MOTION</strong>
+            </div>
+
+            <div class="model-chip" aria-label="模型假設">NO AIR DRAG · g = 9.8 m/s²</div>
+        </header>
+
+        <main class="projectile-layout">
+            <section class="stage" aria-label="拋體運動視覺化畫布">
+                <canvas id="trajectory-canvas" aria-label="拋物線軌跡、斜面與座標軸示意圖"></canvas>
+                <div class="stage-guide">調整右側滑桿 · 觀察軌跡與落點即時變化</div>
+                <div class="stage-tools">
+                    <button class="button" id="btn-guide" type="button">
+                        <span aria-hidden="true">?</span>
+                        <span class="button-label">操作說明</span>
+                    </button>
+                    <button class="button" id="btn-formula" type="button">
+                        <span aria-hidden="true">∑</span>
+                        <span class="button-label">公式與原理</span>
+                    </button>
+                </div>
+
+                <div class="trajectory-chip">
+                    TARGET / <strong id="stage-status">可與斜面交會</strong>
+                </div>
+
+                <aside class="stage-observation" aria-labelledby="stage-observation-title">
+                    <h2 id="stage-observation-title">觀察重點</h2>
+                    <ul>
+                        <li>α 必須大於 θ，才會在正時間重新碰到斜面。</li>
+                        <li>H 只會平移場景，不改變相對運動。</li>
+                        <li>斜面越陡，落點海拔變化越明顯。</li>
+                    </ul>
+                </aside>
+
+            </section>
+
+            <aside class="control-panel" aria-label="拋體運動控制面板">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Ballistics console</p>
+                        <h1>拋體運動實驗室</h1>
+                    </div>
+                    <span class="panel-step">STEP 01—04</span>
+                </div>
+
+                <section class="parameter-panel" aria-label="參數設定">
+                    <label class="control-card" for="input-v0">
+                        <span class="control-card__label">初速 V₀</span>
+                        <output class="control-card__value" id="v0-value" for="input-v0">50 m/s</output>
+                        <input id="input-v0" type="range" min="5" max="180" value="50" step="1">
+                    </label>
+
+                    <label class="control-card" for="input-alpha">
+                        <span class="control-card__label">發射角 α</span>
+                        <span class="angle-value-group">
+                            <output class="control-card__value" id="alpha-value" for="input-alpha">45°</output>
+                            <output class="relative-angle-pill" id="alpha-relative-value" for="input-alpha input-theta">相對斜面 45°</output>
+                        </span>
+                        <input id="input-alpha" type="range" min="0" max="90" value="45" step="1">
+                    </label>
+
+                    <label class="control-card control-card--violet" for="input-theta">
+                        <span class="control-card__label">斜面角 θ</span>
+                        <output class="control-card__value" id="theta-value" for="input-theta">0°</output>
+                        <input id="input-theta" type="range" min="-90" max="90" value="0" step="1">
+                    </label>
+
+                    <label class="control-card control-card--amber" for="input-height">
+                        <span class="control-card__label">發射點海拔 H</span>
+                        <output class="control-card__value" id="height-value" for="input-height">0 m</output>
+                        <input id="input-height" type="range" min="0" max="1200" value="0" step="10">
+                    </label>
+                </section>
+
+                <section class="formula-panel formula-current" aria-labelledby="current-title" aria-live="polite">
+                    <div class="formula-panel__header">
+                        <div>
+                            <p class="eyebrow">Live formula</p>
+                            <h2 id="current-title">即時計算公式</h2>
+                        </div>
+                        <span>拖動滑桿同步更新</span>
+                    </div>
+
+                    <div class="formula-card-grid">
+                        <article class="formula-card formula-card--cyan">
+                            <span class="formula-card__number">01</span>
+                            <h3>相對斜面角</h3>
+                            <p class="formula-equation">β = α − θ</p>
+                            <p class="formula-substitution" id="formula-relative-angle">β = 45° − 0° = 45°</p>
+                        </article>
+
+                        <article class="formula-card formula-card--lime">
+                            <span class="formula-card__number">02</span>
+                            <h3>飛行時間</h3>
+                            <p class="formula-equation">t = 2 × V₀ × sin(β) ÷ [9.8 × cos(θ)]</p>
+                            <p class="formula-substitution" id="formula-time">t = -- s</p>
+                        </article>
+
+                        <article class="formula-card formula-card--blue">
+                            <span class="formula-card__number">03</span>
+                            <h3>水平距離</h3>
+                            <p class="formula-equation">X = V₀ × cos(α) × t</p>
+                            <p class="formula-substitution" id="formula-horizontal">X = -- m</p>
+                        </article>
+
+                        <article class="formula-card formula-card--violet">
+                            <span class="formula-card__number">04</span>
+                            <h3>斜面升降高度</h3>
+                            <p class="formula-equation">Y = X × tan(θ)</p>
+                            <p class="formula-substitution" id="formula-vertical">Y = -- m</p>
+                        </article>
+
+                        <article class="formula-card formula-card--amber">
+                            <span class="formula-card__number">05</span>
+                            <h3>發射點到落點的斜面直線距離</h3>
+                            <p class="formula-equation">PT = √(X² + Y²)</p>
+                            <p class="formula-substitution" id="formula-distance">PT = -- m</p>
+                        </article>
+
+                        <article class="formula-card formula-card--green">
+                            <span class="formula-card__number">06</span>
+                            <h3>落點海拔</h3>
+                            <p class="formula-equation">落點海拔 = H + Y</p>
+                            <p class="formula-substitution" id="formula-altitude">落點海拔 = -- m</p>
+                        </article>
+
+                        <article class="formula-card formula-card--pink">
+                            <span class="formula-card__number">07</span>
+                            <h3>到達最高點時間</h3>
+                            <p class="formula-equation">t<sub>最高</sub> = V₀ × sin(α) ÷ 9.8</p>
+                            <p class="formula-substitution" id="formula-peak-time">t最高 = -- s</p>
+                        </article>
+
+                        <article class="formula-card formula-card--orange">
+                            <span class="formula-card__number">08</span>
+                            <h3>最高點海拔</h3>
+                            <p class="formula-equation">最高點海拔 = H + V₀ × sin(α) × t<sub>最高</sub> − 4.9 × t<sub>最高</sub>²</p>
+                            <p class="formula-substitution" id="formula-peak-altitude">最高點海拔 = -- m</p>
+                        </article>
+                    </div>
+                </section>
+
+                <div class="panel-actions">
+                    <button class="button" id="btn-reset" type="button">重設參數</button>
+                    <button class="button button--primary" id="btn-demo" type="button">示範組合</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header">
+                <h2 id="guide-title">拋體運動操作說明｜How to Explore</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉操作說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>本實驗把發射點放在斜面上，讓你調整發射條件，觀察拋物線何時再次與斜面相交。</p>
+
+                <ol class="guide-step-list">
+                    <li>
+                        <strong>設定初速 V₀</strong>
+                        <span>初速越大，飛行時間、水平距離與斜面距離通常越長。</span>
+                    </li>
+                    <li>
+                        <strong>調整發射角 α</strong>
+                        <span>α 是相對水平面的角度；它和斜面角 θ 的差值會決定能否有效交會。</span>
+                    </li>
+                    <li>
+                        <strong>調整斜面角 θ</strong>
+                        <span>正值表示上坡，負值表示下坡；紫色線會即時顯示斜面。</span>
+                    </li>
+                    <li>
+                        <strong>改變發射點海拔 H</strong>
+                        <span>H 會把發射點與斜面整體往上移，適合觀察「參考高度」和「相對運動」的差異。</span>
+                    </li>
+                    <li>
+                        <strong>判讀結果</strong>
+                        <span>若狀態顯示「軌跡有效」，綠色 T 點就是落點；若無效，紅色虛線代表目前發射條件不會在正時間命中斜面。</span>
+                    </li>
+                </ol>
+
+                <p class="teaching-note"><strong>快速示範：</strong>按下「示範組合」可切換到一組較明顯的上坡彈道。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>開始操作</button>
+            </footer>
+        </section>
+    </div>
+
+    <div class="modal" id="modal-formula" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+            <header class="modal__header">
+                <h2 id="formula-title">斜面拋體運動｜Projectile on an Incline</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉公式說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>本頁採用理想化模型：忽略空氣阻力、重力加速度固定為 9.8 m/s²，且斜面通過發射點 P。</p>
+
+                <p>右側控制面板的「即時計算公式」會隨滑桿同步更新，方便直接比較參數與結果。</p>
+
+                <ul class="principle-list">
+                    <li><strong>角度單位：</strong>畫面中的 α、θ、β 都以「度」表示。</li>
+                    <li><strong>有效交會：</strong>相對斜面角 β = α − θ；β 大於 0 時，才會在正時間再次落到斜面上。</li>
+                    <li><strong>距離關係：</strong>水平距離 X、升降高度 Y 與發射點到落點的斜面直線距離 PT 形成直角三角形。</li>
+                    <li><strong>海拔觀念：</strong>發射點海拔 H 會把整個斜面上下平移，但不改變相對斜面運動。</li>
+                </ul>
+
+                <p class="teaching-note"><strong>教學限制：</strong>這是課堂幾何與運動學示範，不包含空氣阻力、風、彈體旋轉、地球曲率或真實砲彈外彈道。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>了解</button>
+            </footer>
+        </section>
+    </div>
+</body>
+</html>
