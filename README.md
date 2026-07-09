@@ -1,2 +1,2 @@
-# classroom-geography-tzk
+# classroom-lab-tzk
 classroom tool kit : geography
