@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以互動式數字撥盤探索十進位、二進位、八進位與十六進位之間的 32-bit 整數轉換。">
+    <meta name="theme-color" content="#06101e">
+    <title>數字系統研究室｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/son.css">
+    <script defer src="./assets/son.js"></script>
+</head>
+<body class="son-page">
+    <div class="son-shell">
+        <header class="topbar">
+            <a class="home-link" href="../index.html" aria-label="返回工具總頁">← 工具總頁</a>
+
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 04</p>
+                <strong>SYSTEM OF NUMERATION</strong>
+            </div>
+
+            <div class="model-chip" aria-label="模型假設">32-BIT · TWO'S COMPLEMENT</div>
+        </header>
+
+        <main class="son-main">
+            <section class="son-hero" aria-labelledby="son-title">
+                <div>
+                    <p class="eyebrow">Digital number console</p>
+                    <h1 id="son-title">數字系統研究室</h1>
+                    <p>轉動任一進位制的位數撥盤，其他面板會同步顯示同一個 32-bit 整數的表示方式。</p>
+                </div>
+
+                <div class="son-tools">
+                    <button class="button" id="btn-guide" type="button">
+                        <span aria-hidden="true">?</span>
+                        <span>操作說明</span>
+                    </button>
+                    <button class="button" id="btn-formula" type="button">
+                        <span aria-hidden="true">∑</span>
+                        <span>公式與原理</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="overview-panel" aria-label="目前數值總覽">
+                <article>
+                    <span>SIGNED DECIMAL</span>
+                    <strong id="overview-signed">0</strong>
+                </article>
+                <article>
+                    <span>UNSIGNED 32-BIT</span>
+                    <strong id="overview-unsigned">0</strong>
+                </article>
+                <article>
+                    <span>HEX 32-BIT</span>
+                    <strong id="overview-hex">00000000</strong>
+                </article>
+                <article>
+                    <span>BINARY LOW 8</span>
+                    <strong id="overview-bin">00000000</strong>
+                </article>
+            </section>
+
+            <section class="base-grid" id="base-grid" aria-label="進位制互動面板"></section>
+
+            <div class="son-actions">
+                <button class="button" id="btn-reset" type="button">全部重設</button>
+                <button class="button button--primary" id="btn-demo" type="button">示範組合</button>
+            </div>
+        </main>
+    </div>
+
+    <template id="base-panel-template">
+        <article class="base-panel">
+            <div class="base-panel__control">
+                <div class="base-panel__title">
+                    <span class="accent-bar" aria-hidden="true"></span>
+                    <div>
+                        <h2></h2>
+                        <p></p>
+                    </div>
+                </div>
+
+                <label class="input-wrap">
+                    <span>直接輸入</span>
+                    <input type="text" spellcheck="false" inputmode="text" autocomplete="off" placeholder="INPUT">
+                </label>
+
+                <div class="mini-actions">
+                    <button type="button" data-action="step-up">+1</button>
+                    <button type="button" data-action="step-down">-1</button>
+                    <button type="button" data-action="max">MAX</button>
+                    <button type="button" data-action="zero">RESET</button>
+                </div>
+            </div>
+
+            <div class="dial-bank" aria-label="數字撥盤"></div>
+
+            <div class="indicator-bank" aria-label="狀態燈號">
+                <div class="indicator indicator--err">
+                    <span class="indicator__light">✖</span>
+                    <span class="indicator__label">ERR</span>
+                </div>
+                <div class="indicator indicator--ovf">
+                    <span class="indicator__light">⚠</span>
+                    <span class="indicator__label">OVF</span>
+                </div>
+                <div class="indicator indicator--neg">
+                    <span class="indicator__light">−</span>
+                    <span class="indicator__label">NEG</span>
+                </div>
+            </div>
+        </article>
+    </template>
+
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header">
+                <h2 id="guide-title">數字系統操作說明｜How to Explore</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉操作說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>本工具把同一個 32-bit 整數同步顯示成 10 進位、16 進位、8 進位與 2 進位，適合觀察進位制轉換與補數表示。</p>
+
+                <ol class="guide-step-list">
+                    <li>
+                        <strong>轉動位數撥盤</strong>
+                        <span>每個位數上方顯示該位的權重，例如 16 進位的第 3 位代表 16³。按上下箭頭可改變該位數值。</span>
+                    </li>
+                    <li>
+                        <strong>直接輸入數值</strong>
+                        <span>十進位可輸入正負整數；16、8、2 進位則輸入該進位制允許的字元。</span>
+                    </li>
+                    <li>
+                        <strong>觀察燈號</strong>
+                        <span>ERR 表示輸入格式錯誤，OVF 表示超出該面板可完整顯示的範圍，NEG 表示目前 signed 值為負數。</span>
+                    </li>
+                    <li>
+                        <strong>使用 MAX 與 RESET</strong>
+                        <span>MAX 會切換到該面板代表性的最大顯示值；RESET 會把全域數值歸零。</span>
+                    </li>
+                </ol>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>開始操作</button>
+            </footer>
+        </section>
+    </div>
+
+    <div class="modal" id="modal-formula" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+            <header class="modal__header">
+                <h2 id="formula-title">進位制與 32-bit 補數｜Binary, Octal, Decimal, Hex</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉公式說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <ul class="principle-list">
+                    <li><strong>位值概念：</strong>每一位的值等於「該位數字 × base 的次方」。例如 16 進位的 A3 = 10 × 16¹ + 3 × 16⁰。</li>
+                    <li><strong>32-bit signed：</strong>本頁以 -2,147,483,648 到 2,147,483,647 為 signed 十進位範圍。</li>
+                    <li><strong>Unsigned 顯示：</strong>非十進位面板用 unsigned 32-bit 顯示，因此 signed 的 -1 會顯示為十六進位 FFFFFFFF。</li>
+                    <li><strong>Two's complement：</strong>負數可用「加上 2³²」後的 unsigned 值來觀察，例如 -1 → 4,294,967,295 → FFFFFFFF。</li>
+                    <li><strong>面板顯示限制：</strong>本頁每個面板採 8 位撥盤。BIN 只顯示低 8 位，OCT 顯示 8 位八進位，超出時會亮起 OVF。</li>
+                </ul>
+
+                <p class="teaching-note"><strong>教學限制：</strong>這是進位制與補數觀念示範，不是任意精度計算機；所有運算都會折回 32-bit signed integer。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>了解</button>
+            </footer>
+        </section>
+    </div>
+</body>
+</html>

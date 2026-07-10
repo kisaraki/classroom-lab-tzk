@@ -11,6 +11,7 @@
 - [GPS定位實驗室](https://kisaraki.github.io/classroom-lab-tzk/gps_3d/gps_3d.html)
 - [拋體運動實驗室](https://kisaraki.github.io/classroom-lab-tzk/projectilemotion/projectilemotion.html)
 - [透鏡成像實驗室](https://kisaraki.github.io/classroom-lab-tzk/lens/lens.html)
+- [數字系統研究室](https://kisaraki.github.io/classroom-lab-tzk/son/son.html)
 
 ## 目前成果
 
@@ -19,6 +20,7 @@
 | GPS定位實驗室 | 可使用 | `gps_3d/gps_3d.html` | 以互動式 3D 地球、衛星與測距球面示範 GPS 定位概念 |
 | 拋體運動實驗室 | 可使用 | `projectilemotion/projectilemotion.html` | 以互動式方格紙示範斜面拋體運動、角度關係、飛行時間、落點與海拔變化 |
 | 透鏡成像實驗室 | 可使用 | `lens/lens.html` | 以互動式光線圖示範凸透鏡、凹透鏡、焦距標示、物距、像距、放大率與成像性質 |
+| 數字系統研究室 | 可使用 | `son/son.html` | 以互動式撥盤示範 10、16、8、2 進位、32-bit 整數與二補數表示 |
 | 後續教學工具 | 預留 | 由 `index.html` 新增入口 | 依「一項工具、一個子資料夾」原則擴充 |
 
 GPS定位實驗室目前包括：
@@ -56,6 +58,17 @@ GPS定位實驗室目前包括：
 - 獨立的「操作說明」與「公式與原理」視窗。
 - 與網站既有暗色、玻璃面板、深空科技風格一致的響應式介面。
 
+數字系統研究室目前包括：
+
+- 純 HTML/CSS/JavaScript 製作，可直接部署到 GitHub Pages。
+- 以四個同步面板顯示同一個 32-bit 整數的 10 進位、16 進位、8 進位與 2 進位表示。
+- 每個面板提供 8 位機械式撥盤、直接輸入框、`+1`、`-1`、`MAX` 與 `RESET` 操作。
+- 10 進位使用 signed integer；16、8、2 進位使用 unsigned 32-bit two's complement 方式顯示。
+- 右側儀表燈號顯示 `ERR`、`OVF`、`NEG`，用來觀察輸入錯誤、顯示溢位與負數狀態。
+- 頁面上方即時顯示 signed decimal、unsigned 32-bit、hex 32-bit 與 binary low 8 的總覽數值。
+- 獨立的「操作說明」與「公式與原理」視窗。
+- 與網站既有暗色、玻璃面板、深空科技風格一致的響應式介面。
+
 ## 使用方式
 
 從工具總頁進入指定實驗後，依各頁面的操作說明進行探索。
@@ -83,6 +96,15 @@ GPS定位實驗室：
 4. 觀察光線圖中的 L1、L2、L3 三條主光線，以及實像或虛像的位置；若成像超出畫面，請依遠方提示判讀方向。
 5. 查看右側資料面板中的像距 q、放大率 M、成像類型與成像方向。
 6. 開啟「公式與原理」查看薄透鏡公式與教學限制。
+
+數字系統研究室：
+
+1. 在任一進位制面板中使用上下箭頭調整指定位數。
+2. 觀察其他進位制面板如何同步更新為同一個 32-bit 整數。
+3. 使用輸入框直接輸入 10 進位、16 進位、8 進位或 2 進位數字。
+4. 觀察 `ERR`、`OVF`、`NEG` 燈號，理解格式錯誤、顯示溢位與負數補數表示。
+5. 使用 `MAX`、`RESET` 或「示範組合」快速切換代表性數值。
+6. 開啟「公式與原理」查看位值概念、signed / unsigned 與 two's complement 說明。
 
 各工具頁面內的「操作說明」提供完整步驟；「公式與原理」則整理對應的教學概念。
 
@@ -120,6 +142,11 @@ GPS定位實驗室：
 │  └─ assets/
 │     ├─ lens.css                     # 透鏡工具專用樣式
 │     └─ lens.js                      # SVG 光線圖、參數控制與薄透鏡解算
+├─ son/
+│  ├─ son.html                        # 數字系統研究室
+│  └─ assets/
+│     ├─ son.css                      # 數字系統工具專用樣式
+│     └─ son.js                       # 進位制面板、撥盤控制與 32-bit 解算
 ├─ .nojekyll                          # GitHub Pages 直接發布靜態檔案
 └─ README.md
 ```
@@ -138,8 +165,9 @@ py -m http.server 8000
 - GPS定位實驗室：<http://localhost:8000/gps_3d/gps_3d.html>
 - 拋體運動實驗室：<http://localhost:8000/projectilemotion/projectilemotion.html>
 - 透鏡成像實驗室：<http://localhost:8000/lens/lens.html>
+- 數字系統研究室：<http://localhost:8000/son/son.html>
 
-GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完整使用時需要網路連線。拋體運動與透鏡成像頁面不依賴外部 CDN。
+GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完整使用時需要網路連線。拋體運動、透鏡成像與數字系統頁面不依賴外部 CDN。
 
 ## GitHub Pages 部署
 
@@ -158,9 +186,10 @@ GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完
 2. 將入口頁命名為與資料夾相同的 `orbit_lab/orbit_lab.html`。
 3. 將工具專用 CSS、JavaScript 與圖片放在 `orbit_lab/assets/`。
 4. 只有確定會由多項工具共用的資源，才放在根目錄 `assets/`。
-5. 在 `index.html` 新增工具卡片，使用相對路徑 `./orbit_lab/orbit_lab.html`。
-6. 在工具頁提供回到 `../index.html` 的導覽。
-7. 更新本 README 的成果表與專案結構，並驗證 GitHub Pages 子路徑。
+5. 若新工具先以 React、TypeScript 或其他原型檔製作，需轉換為純靜態 HTML/CSS/JavaScript 後再發布；原型檔只作本機參考，不列入 GitHub Pages 正式檔案。
+6. 在 `index.html` 新增工具卡片，使用相對路徑 `./orbit_lab/orbit_lab.html`。
+7. 在工具頁提供回到 `../index.html` 的導覽。
+8. 更新本 README 的成果表與專案結構，並驗證 GitHub Pages 子路徑。
 
 ## 資料來源與教學限制
 
@@ -170,6 +199,7 @@ GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完
 - 本工具用於課堂示範三邊定位與幾何關係，不是實際 GNSS 接收器，也未模擬電離層、時鐘偏差、多路徑或完整最小平方法解算。
 - 拋體運動實驗室採用理想模型，忽略空氣阻力、風、彈體旋轉、地球曲率與真實外彈道，只用於課堂說明等加速度運動與斜面交會。角度顯示一律使用度；θ = ±90° 時斜面為垂直線，公式中的 `cos(θ)` 與 `tan(θ)` 不適用，因此頁面會以教學防護方式顯示為無有效交會。
 - 透鏡成像實驗室採用理想薄透鏡模型，未模擬透鏡厚度、像差、光圈、色散、繞射或真實相機感光面。凸透鏡焦距以正值表示，凹透鏡焦距以負值表示；光軸標記以小寫 `f` 與 `f'` 表示左右焦距位置。城市與 GPS 資料無關的光學示範不需外部資料來源。
+- 數字系統研究室採用 JavaScript 32-bit signed integer 行為示範進位制與 two's complement；二進位面板只顯示低 8 位，八進位面板顯示 8 位，超出面板可完整呈現的範圍時會以 `OVF` 燈號提示。
 
 ## 貢獻
 
