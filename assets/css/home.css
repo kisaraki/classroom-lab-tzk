@@ -49,6 +49,22 @@ body {
     padding-block: 2rem 1rem;
 }
 
+.home-brand {
+    display: grid;
+    gap: 0.32rem;
+}
+
+.brand-tagline {
+    margin: 0 0 0 1.3rem;
+    color: var(--amber);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.26em;
+    line-height: 1;
+    text-shadow: 0 0 12px rgba(255, 199, 90, 0.34);
+    white-space: nowrap;
+}
+
 .version-pill {
     padding: 0.45rem 0.65rem;
     border: 1px solid var(--line);

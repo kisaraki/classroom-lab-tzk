@@ -112,16 +112,9 @@ body.son-page {
     margin-bottom: 1rem;
 }
 
-.son-hero h1 {
-    margin: 0.25rem 0 0;
-    font-size: clamp(2rem, 4vw, 3.7rem);
-    font-weight: 600;
-    letter-spacing: -0.05em;
-}
-
 .son-hero p:not(.eyebrow) {
     max-width: 48rem;
-    margin: 0.75rem 0 0;
+    margin: 0.45rem 0 0;
     color: var(--muted);
     line-height: 1.75;
 }
@@ -134,7 +127,7 @@ body.son-page {
 
 .overview-panel {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.7rem;
     margin-bottom: 0.95rem;
 }
@@ -165,6 +158,34 @@ body.son-page {
     font-size: clamp(1.15rem, 2.2vw, 1.7rem);
     font-weight: 800;
     letter-spacing: -0.04em;
+}
+
+.overview-panel__binary {
+    grid-column: 1 / -1;
+}
+
+.overview-panel__binary strong {
+    padding-block: 0.15rem 0.25rem;
+    overflow-x: auto;
+    overflow-wrap: normal;
+    font-size: clamp(0.9rem, 2.4vw, 1.95rem);
+    letter-spacing: 0.08em;
+    text-align: center;
+    white-space: pre;
+    word-spacing: 0.55em;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+    scrollbar-width: thin;
+}
+
+.binary-bit-order {
+    display: flex;
+    margin-top: 0.35rem;
+    justify-content: space-between;
+    color: color-mix(in srgb, var(--amber) 72%, white 10%);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
 }
 
 .base-grid {
@@ -629,6 +650,10 @@ body.son-page {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .overview-panel article:nth-child(3) {
+        grid-column: 1 / -1;
+    }
+
     .base-panel {
         grid-template-columns: 1fr;
     }
@@ -645,6 +670,12 @@ body.son-page {
 
     .overview-panel {
         grid-template-columns: 1fr;
+    }
+
+    .overview-panel__binary strong {
+        font-size: clamp(0.72rem, 3.4vw, 0.9rem);
+        letter-spacing: 0.04em;
+        word-spacing: 0.25em;
     }
 
     .son-tools,

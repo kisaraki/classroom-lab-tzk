@@ -180,7 +180,7 @@
             output.formulaMagnification.textContent = "M 無法以有限數值表示。";
             output.formulaJudgement.textContent = "光線近似平行，所以沒有有限距離的清楚影像。";
         } else {
-            output.imageDistance.textContent = `${formatSigned(model.q)} f`;
+            output.imageDistance.textContent = `${formatSigned(model.q)} f'`;
             output.magnification.textContent = formatNumber(model.magnification);
             output.imageType.textContent = model.imageType;
             output.orientation.textContent = `${model.orientation} · ${model.side}`;

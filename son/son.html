@@ -25,9 +25,9 @@
 
         <main class="son-main">
             <section class="son-hero" aria-labelledby="son-title">
+                <h1 class="screen-reader-only" id="son-title">進位制互動控制台</h1>
                 <div>
                     <p class="eyebrow">Digital number console</p>
-                    <h1 id="son-title">數字系統研究室</h1>
                     <p>轉動任一進位制的位數撥盤，其他面板會同步顯示同一個 32-bit 整數的表示方式。</p>
                 </div>
 
@@ -56,9 +56,13 @@
                     <span>HEX 32-BIT</span>
                     <strong id="overview-hex">00000000</strong>
                 </article>
-                <article>
-                    <span>BINARY LOW 8</span>
-                    <strong id="overview-bin">00000000</strong>
+                <article class="overview-panel__binary">
+                    <span>BINARY 32-BIT</span>
+                    <strong id="overview-bin" aria-label="第 32 位至第 1 位：00000000 00000000 00000000 00000000">00000000 00000000 00000000 00000000</strong>
+                    <div class="binary-bit-order" aria-hidden="true">
+                        <small>BIT 32</small>
+                        <small>BIT 1</small>
+                    </div>
                 </article>
             </section>
 

@@ -47,6 +47,11 @@
         return value.padStart(size, "0");
     }
 
+    function formatBinary32(value = state.value) {
+        const bits = padLeft(unsigned32(value).toString(2), 32);
+        return bits.match(/.{8}/g).join(" ");
+    }
+
     function formatSigned(value = state.value) {
         return Object.is(value, -0) ? "-0" : String(value);
     }
@@ -316,10 +321,12 @@
     }
 
     function updateOverview() {
+        const binary32 = formatBinary32();
         refs.overviewSigned.textContent = formatSigned();
         refs.overviewUnsigned.textContent = unsigned32().toLocaleString("en-US");
         refs.overviewHex.textContent = padLeft(unsigned32().toString(16).toUpperCase(), 8);
-        refs.overviewBin.textContent = padLeft((unsigned32() & 0xFF).toString(2), 8);
+        refs.overviewBin.textContent = binary32;
+        refs.overviewBin.setAttribute("aria-label", `第 32 位至第 1 位：${binary32}`);
     }
 
     function updatePanel(panelRef) {

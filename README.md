@@ -1,13 +1,18 @@
 # Classroom Lab tzk
 
-以 GitHub Pages 發布的純前端互動教學工具集。根目錄 `index.html` 是所有工具的入口；各項實驗則以獨立子資料夾維護，方便持續加入新的課堂功能。
+> **KOSMOS TOOLKIT｜探真拓知酷**
+
+為科學課堂打造、以 GitHub Pages 發布的純前端互動實驗工具集。根目錄 `index.html` 是所有工具的入口；各項實驗則以獨立子資料夾維護，方便持續加入新的課堂功能。
+
+`Classroom Lab tzk` 是專案名稱，其中 `tzk` 保留作者名稱識別；主頁以 `KOSMOS TOOLKIT` 作為工具集標誌，並以「探真拓知酷」作為中文副標。
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-online-2ea44f?logo=github)](https://kisaraki.github.io/classroom-lab-tzk/)
 [![Static Site](https://img.shields.io/badge/HTML%20%2B%20CSS%20%2B%20JavaScript-static-0aa8d8)](#技術架構)
+[![License: MIT](https://img.shields.io/badge/License-MIT-ffc75a.svg)](./LICENSE)
 
 ## 線上體驗
 
-- [Classroom Lab 工具總頁](https://kisaraki.github.io/classroom-lab-tzk/)
+- [KOSMOS TOOLKIT 工具總頁](https://kisaraki.github.io/classroom-lab-tzk/)
 - [GPS定位實驗室](https://kisaraki.github.io/classroom-lab-tzk/gps_3d/gps_3d.html)
 - [拋體運動實驗室](https://kisaraki.github.io/classroom-lab-tzk/projectilemotion/projectilemotion.html)
 - [透鏡成像實驗室](https://kisaraki.github.io/classroom-lab-tzk/lens/lens.html)
@@ -53,7 +58,7 @@ GPS定位實驗室目前包括：
 - 光軸焦距標示採小寫 `f` 與 `f'`，並包含 `0.5f`、`0.5f'`、`1.5f`、`2f`、`2.5f` 等參考點。
 - 實線表示實際光線，虛線表示反向延長線；實像與虛像使用不同顏色與線型呈現。
 - 當成像位置超出可視範圍時，會在畫面中以醒目提示標示「成像在右側遠方」或「成像在左側遠方」。
-- 右側面板即時顯示焦距、物距、像距、放大率、成像類型、成像方向與成像位置。
+- 右側面板即時顯示焦距、物距、像距、放大率、成像類型、成像方向與成像位置；其中像距 `q` 以右側焦距單位 `f'` 表示。
 - 公式卡同步列出薄透鏡公式、像距計算、放大率與成像判讀。
 - 獨立的「操作說明」與「公式與原理」視窗。
 - 與網站既有暗色、玻璃面板、深空科技風格一致的響應式介面。
@@ -65,7 +70,7 @@ GPS定位實驗室目前包括：
 - 每個面板提供 8 位機械式撥盤、直接輸入框、`+1`、`-1`、`MAX` 與 `RESET` 操作。
 - 10 進位使用 signed integer；16、8、2 進位使用 unsigned 32-bit two's complement 方式顯示。
 - 右側儀表燈號顯示 `ERR`、`OVF`、`NEG`，用來觀察輸入錯誤、顯示溢位與負數狀態。
-- 頁面上方即時顯示 signed decimal、unsigned 32-bit、hex 32-bit 與 binary low 8 的總覽數值。
+- 頁面上方即時顯示 signed decimal、unsigned 32-bit、hex 32-bit 與 binary 32-bit 的總覽數值；二進位數字由第 32 位至第 1 位排列，並以每 8 位一組顯示。
 - 獨立的「操作說明」與「公式與原理」視窗。
 - 與網站既有暗色、玻璃面板、深空科技風格一致的響應式介面。
 
@@ -94,7 +99,7 @@ GPS定位實驗室：
 2. 拖曳物距滑桿，改變物體距離透鏡中心的遠近。
 3. 對照光軸上的 `f`、`f'`、`0.5f`、`0.5f'` 等標記，觀察物體與焦點的相對位置。
 4. 觀察光線圖中的 L1、L2、L3 三條主光線，以及實像或虛像的位置；若成像超出畫面，請依遠方提示判讀方向。
-5. 查看右側資料面板中的像距 q、放大率 M、成像類型與成像方向。
+5. 查看右側資料面板中以 `f'` 表示的像距 q，以及放大率 M、成像類型與成像方向。
 6. 開啟「公式與原理」查看薄透鏡公式與教學限制。
 
 數字系統研究室：
@@ -122,7 +127,7 @@ GPS定位實驗室：
 
 ```text
 .
-├─ index.html                         # 工具總頁與所有功能入口
+├─ index.html                         # KOSMOS TOOLKIT 工具總頁與所有功能入口
 ├─ assets/
 │  └─ css/
 │     ├─ shared.css                   # 跨工具共用樣式
@@ -148,6 +153,7 @@ GPS定位實驗室：
 │     ├─ son.css                      # 數字系統工具專用樣式
 │     └─ son.js                       # 進位制面板、撥盤控制與 32-bit 解算
 ├─ .nojekyll                          # GitHub Pages 直接發布靜態檔案
+├─ LICENSE                            # MIT License
 └─ README.md
 ```
 
@@ -161,7 +167,7 @@ py -m http.server 8000
 
 啟動後開啟：
 
-- 工具總頁：<http://localhost:8000/>
+- KOSMOS TOOLKIT 工具總頁：<http://localhost:8000/>
 - GPS定位實驗室：<http://localhost:8000/gps_3d/gps_3d.html>
 - 拋體運動實驗室：<http://localhost:8000/projectilemotion/projectilemotion.html>
 - 透鏡成像實驗室：<http://localhost:8000/lens/lens.html>
@@ -199,7 +205,7 @@ GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完
 - 本工具用於課堂示範三邊定位與幾何關係，不是實際 GNSS 接收器，也未模擬電離層、時鐘偏差、多路徑或完整最小平方法解算。
 - 拋體運動實驗室採用理想模型，忽略空氣阻力、風、彈體旋轉、地球曲率與真實外彈道，只用於課堂說明等加速度運動與斜面交會。角度顯示一律使用度；θ = ±90° 時斜面為垂直線，公式中的 `cos(θ)` 與 `tan(θ)` 不適用，因此頁面會以教學防護方式顯示為無有效交會。
 - 透鏡成像實驗室採用理想薄透鏡模型，未模擬透鏡厚度、像差、光圈、色散、繞射或真實相機感光面。凸透鏡焦距以正值表示，凹透鏡焦距以負值表示；光軸標記以小寫 `f` 與 `f'` 表示左右焦距位置。城市與 GPS 資料無關的光學示範不需外部資料來源。
-- 數字系統研究室採用 JavaScript 32-bit signed integer 行為示範進位制與 two's complement；二進位面板只顯示低 8 位，八進位面板顯示 8 位，超出面板可完整呈現的範圍時會以 `OVF` 燈號提示。
+- 數字系統研究室採用 JavaScript 32-bit signed integer 行為示範進位制與 two's complement；操作用二進位撥盤面板顯示低 8 位，上方總覽則以四組 8 位數字顯示完整 32 位。八進位面板顯示 8 位，超出面板可完整呈現的範圍時會以 `OVF` 燈號提示。
 
 ## 貢獻
 
@@ -207,4 +213,6 @@ GPS 頁面會從 CDN 載入 Three.js、OrbitControls 與地球紋理，因此完
 
 ## 授權
 
-本專案目前尚未附加開源授權條款。
+除另有註明的第三方函式庫、資料與素材外，本專案原創程式碼以 [MIT License](./LICENSE) 授權，著作權標示為 `Copyright (c) 2026 tzk`。
+
+MIT License 允許使用、複製、修改、合併、發布、散布、再授權與販售軟體副本，但必須保留原始著作權與授權聲明；軟體按現狀提供，不附帶任何明示或默示擔保。第三方資源仍依其各自的授權或使用條款辦理。
