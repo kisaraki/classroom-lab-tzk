@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以互動式光線圖探索凸透鏡與凹透鏡成像，觀察物距、像距、放大率與成像性質的變化。">
+    <meta name="theme-color" content="#06101e">
+    <title>透鏡成像實驗室｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/lens.css">
+    <script defer src="./assets/lens.js"></script>
+</head>
+<body class="lens-page">
+    <div class="lens-shell">
+        <header class="topbar">
+            <a class="home-link" href="../index.html" aria-label="返回工具總頁">← 工具總頁</a>
+
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 03</p>
+                <strong>LENS IMAGING</strong>
+            </div>
+
+            <div class="model-chip" aria-label="模型假設">THIN LENS · SVG RAYS</div>
+        </header>
+
+        <main class="lens-layout">
+            <section class="lens-stage" aria-label="透鏡成像光線圖">
+                <svg id="lens-svg" role="img" aria-labelledby="lens-svg-title lens-svg-desc">
+                    <title id="lens-svg-title">透鏡成像光線圖</title>
+                    <desc id="lens-svg-desc">顯示光軸、透鏡、焦點、物體、成像位置與三條主光線。</desc>
+                </svg>
+
+                <div class="stage-guide">調整右側控制 · 觀察三條主光線與成像性質</div>
+
+                <div class="stage-tools">
+                    <button class="button" id="btn-guide" type="button">
+                        <span aria-hidden="true">?</span>
+                        <span class="button-label">操作說明</span>
+                    </button>
+                    <button class="button" id="btn-formula" type="button">
+                        <span aria-hidden="true">∑</span>
+                        <span class="button-label">公式與原理</span>
+                    </button>
+                </div>
+
+                <div class="image-chip">
+                    IMAGE / <strong id="stage-status">實像 · 倒立</strong>
+                </div>
+
+                <aside class="stage-observation" aria-labelledby="stage-observation-title">
+                    <h2 id="stage-observation-title">觀察重點</h2>
+                    <ul>
+                        <li>凸透鏡物體在焦距外時，可能形成異側實像。</li>
+                        <li>凸透鏡物體在焦距內時，會形成同側正立虛像。</li>
+                        <li>凹透鏡無論物距如何，通常形成同側正立縮小虛像。</li>
+                    </ul>
+                </aside>
+            </section>
+
+            <aside class="control-panel" aria-label="透鏡成像控制面板">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Optics console</p>
+                        <h1>透鏡成像實驗室</h1>
+                    </div>
+                    <span class="panel-step">STEP 01—02</span>
+                </div>
+
+                <section class="parameter-panel" aria-label="參數設定">
+                    <div class="control-card">
+                        <span class="control-card__label">透鏡種類</span>
+                        <div class="lens-toggle" role="radiogroup" aria-label="選擇透鏡種類">
+                            <label>
+                                <input type="radio" name="lens-type" value="convex" checked>
+                                <span>凸透鏡</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="lens-type" value="concave">
+                                <span>凹透鏡</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <label class="control-card control-card--cyan" for="input-p-ratio">
+                        <span class="control-card__label">物距 p</span>
+                        <output class="control-card__value" id="p-ratio-value" for="input-p-ratio">2.00 f</output>
+                        <input id="input-p-ratio" type="range" min="0.2" max="2.8" value="2" step="0.05">
+                        <span class="range-markers" aria-hidden="true">
+                            <span>0.5f</span>
+                            <span>f</span>
+                            <span>1.5f</span>
+                            <span>2f</span>
+                            <span>2.5f</span>
+                        </span>
+                    </label>
+                </section>
+
+                <section class="result-panel" aria-labelledby="result-title" aria-live="polite">
+                    <div class="result-panel__header">
+                        <div>
+                            <p class="eyebrow">Live readout</p>
+                            <h2 id="result-title">成像性質資料</h2>
+                        </div>
+                        <span id="lens-type-summary">凸透鏡</span>
+                    </div>
+
+                    <div class="result-grid">
+                        <article class="result-card">
+                            <span>焦距 f</span>
+                            <strong id="result-focal">+1.00 f</strong>
+                        </article>
+                        <article class="result-card">
+                            <span>物距 p</span>
+                            <strong id="result-object-distance">2.00 f</strong>
+                        </article>
+                        <article class="result-card">
+                            <span>像距 q</span>
+                            <strong id="result-image-distance">2.00 f</strong>
+                        </article>
+                        <article class="result-card">
+                            <span>放大率 M</span>
+                            <strong id="result-magnification">-1.00</strong>
+                        </article>
+                        <article class="result-card result-card--wide">
+                            <span>成像類型</span>
+                            <strong id="result-image-type">實像</strong>
+                        </article>
+                        <article class="result-card result-card--wide">
+                            <span>成像方向與位置</span>
+                            <strong id="result-orientation">倒立 · 異側</strong>
+                        </article>
+                    </div>
+
+                    <p class="interpretation" id="result-interpretation">物體在 2f，會在另一側 2f' 形成等大的倒立實像。</p>
+                </section>
+
+                <section class="formula-panel" aria-labelledby="formula-live-title" aria-live="polite">
+                    <div class="formula-panel__header">
+                        <div>
+                            <p class="eyebrow">Live formula</p>
+                            <h2 id="formula-live-title">即時計算公式</h2>
+                        </div>
+                        <span>單位以 f 表示</span>
+                    </div>
+
+                    <div class="formula-card-grid">
+                        <article class="formula-card formula-card--cyan">
+                            <span class="formula-card__number">01</span>
+                            <h3>薄透鏡公式</h3>
+                            <p class="formula-equation">1/f = 1/p + 1/q</p>
+                            <p class="formula-substitution" id="formula-lens-equation">1/+1.00 = 1/2.00 + 1/2.00</p>
+                        </article>
+
+                        <article class="formula-card formula-card--lime">
+                            <span class="formula-card__number">02</span>
+                            <h3>像距</h3>
+                            <p class="formula-equation">q = f × p ÷ (p − f)</p>
+                            <p class="formula-substitution" id="formula-image-distance">q = 2.00 f</p>
+                        </article>
+
+                        <article class="formula-card formula-card--magenta">
+                            <span class="formula-card__number">03</span>
+                            <h3>放大率</h3>
+                            <p class="formula-equation">M = −q ÷ p</p>
+                            <p class="formula-substitution" id="formula-magnification">M = -2.00 ÷ 2.00 = -1.00</p>
+                        </article>
+
+                        <article class="formula-card formula-card--amber">
+                            <span class="formula-card__number">04</span>
+                            <h3>成像判讀</h3>
+                            <p class="formula-equation">q 正為異側實像；q 負為同側虛像</p>
+                            <p class="formula-substitution" id="formula-judgement">q &gt; 0，所以是異側實像。</p>
+                        </article>
+                    </div>
+                </section>
+
+                <div class="panel-actions">
+                    <button class="button" id="btn-reset" type="button">重設參數</button>
+                    <button class="button button--primary" id="btn-demo" type="button">示範組合</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header">
+                <h2 id="guide-title">透鏡成像操作說明｜How to Explore</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉操作說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>本實驗用「光線圖」觀察薄透鏡成像。物體固定在透鏡左側，光線由左往右行進。</p>
+
+                <ol class="guide-step-list">
+                    <li>
+                        <strong>選擇透鏡種類</strong>
+                        <span>凸透鏡會聚光線；凹透鏡發散光線。切換後，焦距正負與光線方向會一起改變。</span>
+                    </li>
+                    <li>
+                        <strong>調整物距 p</strong>
+                        <span>滑桿以焦距 f 的倍數表示物距。把物體移近或移遠，觀察像距、放大率與影像方向如何改變。</span>
+                    </li>
+                    <li>
+                        <strong>閱讀三條主光線</strong>
+                        <span>L1 平行光線、L2 通過透鏡中心、L3 經過或指向焦點。實線是實際光線，虛線是反向延長線。</span>
+                    </li>
+                    <li>
+                        <strong>判讀成像</strong>
+                        <span>黃色箭頭表示實像；灰色虛線箭頭表示虛像。右側資料面板會同步顯示像距 q、放大率 M 與成像性質。</span>
+                    </li>
+                </ol>
+
+                <p class="teaching-note"><strong>快速示範：</strong>按下「示範組合」可依序切換凸透鏡 2f、凸透鏡焦距內、凹透鏡等代表情境。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>開始操作</button>
+            </footer>
+        </section>
+    </div>
+
+    <div class="modal" id="modal-formula" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+            <header class="modal__header">
+                <h2 id="formula-title">薄透鏡成像｜Thin Lens Imaging</h2>
+                <button class="modal__close" type="button" data-close-modal aria-label="關閉公式說明">×</button>
+            </header>
+
+            <div class="modal__body">
+                <p>本頁採用理想薄透鏡模型：透鏡厚度忽略不計，物體在透鏡左側，光由左往右行進。</p>
+
+                <ul class="principle-list">
+                    <li><strong>焦距 f：</strong>凸透鏡視為正焦距，凹透鏡視為負焦距。</li>
+                    <li><strong>物距 p：</strong>物體到透鏡中心的距離，本實驗以焦距 f 的倍數調整。</li>
+                    <li><strong>像距 q：</strong>q 為正時，像在透鏡右側，屬於實像；q 為負時，像在透鏡左側，屬於虛像。</li>
+                    <li><strong>放大率 M：</strong>M = −q ÷ p。M 為負代表倒立，M 為正代表正立；絕對值大於 1 代表放大。</li>
+                    <li><strong>焦點特例：</strong>凸透鏡物體剛好在 f 上時，折射光近似平行，不會在有限距離形成清楚影像。</li>
+                </ul>
+
+                <p class="teaching-note"><strong>教學限制：</strong>這是課堂光線圖示範，未模擬透鏡厚度、像差、光圈、色散、繞射或真實相機感光面。</p>
+            </div>
+
+            <footer class="modal__footer">
+                <button class="button button--primary" type="button" data-close-modal>了解</button>
+            </footer>
+        </section>
+    </div>
+</body>
+</html>
