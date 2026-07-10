@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以單位圓、六角關係圖與週期波形探索廣義三角函數。">
+    <meta name="theme-color" content="#06101e">
+    <title>三角函數實驗室｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/trigfun.css">
+    <script defer src="./assets/trigfun.js"></script>
+</head>
+<body class="trig-page">
+    <div class="trig-shell">
+        <header class="topbar">
+            <a class="home-link" href="../index.html">← 工具總頁</a>
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 05</p>
+                <strong>GENERALIZED TRIGONOMETRY</strong>
+            </div>
+            <div class="model-chip">UNIT CIRCLE · ±10 TURNS</div>
+        </header>
+
+        <main class="trig-main">
+            <section class="trig-hero" aria-labelledby="trig-title">
+                <div>
+                    <p class="eyebrow">Angle · coordinate · waveform</p>
+                    <h1 class="screen-reader-only" id="trig-title">三角函數實驗室</h1>
+                    <p>拖曳單位圓上的亮點，觀察廣義角、座標、六種三角函數與週期波形同步變化。</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="button" id="btn-guide" type="button">? 操作說明</button>
+                    <button class="button" id="btn-formula" type="button">∑ 公式與原理</button>
+                    <button class="button" id="btn-angle-unit" type="button" aria-pressed="false">切換為徑度量</button>
+                    <button class="button button--primary" id="btn-reset" type="button">重設 45°</button>
+                </div>
+            </section>
+
+            <section class="dashboard">
+                <article class="panel circle-panel">
+                    <div class="panel-heading">
+                        <div><span>01</span><h2>單位圓控制臺</h2></div>
+                        <output id="drag-status">DRAG POINT P</output>
+                    </div>
+                    <svg id="unit-circle" viewBox="-170 -170 340 340" role="img" aria-labelledby="circle-title circle-desc">
+                        <title id="circle-title">可拖曳的三角函數單位圓</title>
+                        <desc id="circle-desc">拖曳圓周上的 P 點改變角度與座標。</desc>
+                        <g id="circle-grid"></g>
+                        <line class="axis" x1="-160" y1="0" x2="160" y2="0"></line>
+                        <line class="axis" x1="0" y1="-160" x2="0" y2="160"></line>
+                        <text class="axis-label" x="150" y="-8">x</text>
+                        <text class="axis-label" x="8" y="-150">y</text>
+                        <circle class="unit-ring" cx="0" cy="0" r="125"></circle>
+                        <g class="special-angle-labels" aria-label="特殊角靜態標示">
+                            <text x="140" y="17" data-special-angle="0">0°</text>
+                            <text x="100" y="-98" data-special-angle="45">45°</text>
+                            <text x="-13" y="-137" data-special-angle="90">90°</text>
+                            <text x="-100" y="-98" data-special-angle="135">135°</text>
+                            <text x="-140" y="17" data-special-angle="180">180°</text>
+                            <text x="-100" y="106" data-special-angle="225">225°</text>
+                            <text x="0" y="146" data-special-angle="270">270°</text>
+                            <text x="100" y="106" data-special-angle="315">315°</text>
+                        </g>
+                        <text class="origin-label" x="-16" y="17">O</text>
+                        <path id="angle-arc" class="angle-arc"></path>
+                        <line id="projection-x" class="projection projection--x"></line>
+                        <line id="projection-y" class="projection projection--y"></line>
+                        <line id="radius-line" class="radius-line" x1="0" y1="0"></line>
+                        <text id="radius-label" class="radius-label">c = 1.00</text>
+                        <circle id="drag-point" class="drag-point" r="8" tabindex="0" role="slider" aria-label="角度" aria-valuemin="-3600" aria-valuemax="3600"></circle>
+                        <text id="point-label" class="point-label">P(a, b)</text>
+                        <text class="theta-label" x="37" y="-16">θ</text>
+                    </svg>
+
+                    <div class="angle-readout">
+                        <div class="angle-primary"><span>廣義角 θ₀</span><strong id="total-angle">45.00°</strong></div>
+                        <div class="coterminal-definition">
+                            <span>同界角公式</span>
+                            <small>θ = 圈數 × k + θ₀</small>
+                            <strong id="coterminal-definition">θ = 360° × (0) + 45.00°</strong>
+                        </div>
+                        <div class="readout-a"><span>a = cos θ</span><strong id="coord-a">√2/2</strong></div>
+                        <div class="readout-b"><span>b = sin θ</span><strong id="coord-b">√2/2</strong></div>
+                        <div class="readout-c"><span>c（單位圓半徑）</span><strong id="radius-value">1.00</strong></div>
+                        <div class="quick-angle-panel">
+                            <span>快速角度</span>
+                            <div class="quick-angle-buttons" aria-label="快速移動 c 到指定角度">
+                                <button type="button" data-quick-angle="45">+45度</button>
+                                <button type="button" data-quick-angle="-45">-45度</button>
+                                <button type="button" data-quick-angle="30">+30度</button>
+                                <button type="button" data-quick-angle="-30">-30度</button>
+                                <button type="button" data-quick-angle="60">+60度</button>
+                                <button type="button" data-quick-angle="-60">-60度</button>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="panel hex-panel">
+                    <div class="panel-heading"><div><span>02</span><h2>Magic Hexagon</h2></div><output>LIVE VALUES</output></div>
+                    <div class="hex-layout" aria-label="Magic Hexagon 六種三角函數即時計算">
+                        <svg class="hex-structure" viewBox="0 0 600 520" aria-hidden="true">
+                            <g class="hex-sectors">
+                                <polygon class="hex-sector--a" points="300,260 180,55 420,55"></polygon>
+                                <polygon class="hex-sector--b" points="300,260 420,55 540,260"></polygon>
+                                <polygon class="hex-sector--a" points="300,260 540,260 420,465"></polygon>
+                                <polygon class="hex-sector--b" points="300,260 420,465 180,465"></polygon>
+                                <polygon class="hex-sector--a" points="300,260 180,465 60,260"></polygon>
+                                <polygon class="hex-sector--b" points="300,260 60,260 180,55"></polygon>
+                            </g>
+                            <polygon class="hex-outline" points="180,55 420,55 540,260 420,465 180,465 60,260"></polygon>
+                            <line x1="180" y1="55" x2="420" y2="465"></line>
+                            <line x1="420" y1="55" x2="180" y2="465"></line>
+                            <line x1="60" y1="260" x2="540" y2="260"></line>
+                            <circle cx="300" cy="260" r="46"></circle>
+                        </svg>
+                        <div class="hex-card hex-card--sin" data-function="sin"><span>sin θ</span><small>b / c</small><strong></strong></div>
+                        <div class="hex-card hex-card--cos" data-function="cos"><span>cos θ</span><small>a / c</small><strong></strong></div>
+                        <div class="hex-card hex-card--tan" data-function="tan"><span>tan θ</span><small>b / a</small><strong></strong></div>
+                        <div class="hex-center"><strong>1</strong><span>對角互為倒數</span></div>
+                        <div class="hex-card hex-card--cot" data-function="cot"><span>cot θ</span><small>a / b</small><strong></strong></div>
+                        <div class="hex-card hex-card--sec" data-function="sec"><span>sec θ</span><small>c / a</small><strong></strong></div>
+                        <div class="hex-card hex-card--csc" data-function="csc"><span>csc θ</span><small>c / b</small><strong></strong></div>
+                    </div>
+                    <aside class="panel-note">
+                        <p>Magic Hexagon 中，穿過中央 1 的對角函數互為倒數；黃字為目前角度的函數值。只有精確落在特殊角時才顯示根號形式。</p>
+                        <div class="square-relations" aria-label="六個三角函數的平方關係">
+                            <span>sin² θ + cos² θ = 1</span>
+                            <span>1 + tan² θ = sec² θ</span>
+                            <span>1 + cot² θ = csc² θ</span>
+                        </div>
+                    </aside>
+                </article>
+            </section>
+
+            <section class="panel waveform-panel">
+                <div class="panel-heading"><div><span>03</span><h2>週期波形追蹤</h2></div><output id="wave-range">0° → 360°</output></div>
+                <div class="wave-grid" id="wave-grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header"><h2 id="guide-title">操作說明｜How to Explore</h2><button class="modal__close" type="button" data-close-modal aria-label="關閉">×</button></header>
+            <div class="modal__body">
+                <ol class="guide-list">
+                    <li><strong>拖曳 P 點：</strong>在單位圓內按住並轉動；跨過起始方向時會累計圈數，範圍為 ±10 圈。</li>
+                    <li><strong>鍵盤微調：</strong>聚焦 P 點後，以左右方向鍵每次改變 <span id="keyboard-step">1°</span>，按住 Shift 時每次改變 <span id="keyboard-step-large">10°</span>。</li>
+                    <li><strong>快速角度：</strong>使用 c 區塊下方的快速按鈕，會在 c 的目前角度上增加 ±30、±45 或 ±60 度。</li>
+                    <li><strong>切換角度單位：</strong>按「切換為徑度量／度度量」，整頁角度讀值與波形刻度會同步切換。</li>
+                    <li><strong>觀察座標：</strong>P(a, b) 中的 a 是水平投影，b 是垂直投影；單位圓斜邊 c 固定為 1。</li>
+                    <li><strong>比較三區：</strong>角度改變時，Magic Hexagon 的代入值與下方六條波形會同步移動。</li>
+                </ol>
+            </div>
+            <footer class="modal__footer"><button class="button button--primary" type="button" data-close-modal>開始操作</button></footer>
+        </section>
+    </div>
+
+    <div class="modal" id="modal-formula" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
+            <header class="modal__header"><h2 id="formula-title">公式與原理｜Unit Circle</h2><button class="modal__close" type="button" data-close-modal aria-label="關閉">×</button></header>
+            <div class="modal__body">
+                <div class="formula-grid">
+                    <article><strong>正弦</strong><p>sin θ = b ÷ c</p></article><article><strong>餘弦</strong><p>cos θ = a ÷ c</p></article>
+                    <article><strong>正切</strong><p>tan θ = b ÷ a</p></article><article><strong>餘切</strong><p>cot θ = a ÷ b</p></article>
+                    <article><strong>正割</strong><p>sec θ = c ÷ a</p></article><article><strong>餘割</strong><p>csc θ = c ÷ b</p></article>
+                </div>
+                <ul class="principle-list">
+                    <li>單位圓半徑 c = 1，因此 P(a, b) = (cos θ, sin θ)。</li>
+                    <li>sin 與 csc、cos 與 sec、tan 與 cot 分別互為倒數。</li>
+                    <li>當分母為 0 時，該函數沒有定義；波形會在該角度附近形成漸近線。</li>
+                    <li>同界角相差整數圈，座標與六種函數值相同。</li>
+                </ul>
+                <p class="teaching-note"><strong>教學模型：</strong>畫面可切換度度量與徑度量；程式內部使用瀏覽器數學函式進行計算。圖形與小數為視覺化近似值。</p>
+            </div>
+            <footer class="modal__footer"><button class="button button--primary" type="button" data-close-modal>了解</button></footer>
+        </section>
+    </div>
+</body>
+</html>
