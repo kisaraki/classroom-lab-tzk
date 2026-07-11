@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="以地日與月地軌道、月相及模擬氣象資料探索天文週期的互動式軌道觀測站。">
+    <meta name="theme-color" content="#06101e">
+    <title>軌道觀測站｜Classroom Lab tzk</title>
+    <link rel="stylesheet" href="../assets/css/shared.css">
+    <link rel="stylesheet" href="./assets/ogo.css">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script defer src="./assets/ogo.js"></script>
+</head>
+<body class="ogo-page">
+    <div class="ogo-shell">
+        <header class="topbar">
+            <a class="home-link" href="../index.html" aria-label="返回工具總頁">← 工具總頁</a>
+            <div class="page-identity">
+                <p>CLASSROOM LAB / EXPERIMENT 06</p>
+                <strong>ORBITAL OBSERVATORY</strong>
+            </div>
+            <div class="model-chip">beta · EDUCATIONAL MODEL</div>
+        </header>
+
+        <main class="ogo-main">
+            <section class="ogo-hero" aria-labelledby="ogo-title">
+                <div>
+                    <p class="eyebrow">Orbit · phase · seasonal signal</p>
+                    <h1 class="screen-reader-only" id="ogo-title">軌道觀測站</h1>
+                    <p>調整日期，觀察地日公轉、月地相位與季節訊號如何同步變化。所有距離、大小與氣象數值皆為教學示意。</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="button" id="btn-guide" type="button">? 操作說明</button>
+                    <button class="button" id="btn-principle" type="button">∑ 模型與原理</button>
+                </div>
+            </section>
+
+            <section class="date-console panel" aria-labelledby="date-console-title">
+                <div class="panel-heading">
+                    <div><span>DATE</span><h2 id="date-console-title">Controller</h2></div>
+                    <output id="date-status">2025-01-01 · DAY 001</output>
+                </div>
+                <div class="date-console__body">
+                    <div class="date-dials">
+                        <label><span>年</span><select id="dial-year"></select></label>
+                        <label><span>月</span><select id="dial-month"></select></label>
+                        <label><span>日</span><select id="dial-day"></select></label>
+                    </div>
+                    <div class="date-stepper" aria-label="日期微調">
+                        <button type="button" data-day-step="-1">− 1 日</button>
+                        <button type="button" data-day-step="1">+ 1 日</button>
+                        <button type="button" id="btn-reset-date">重設起點</button>
+                    </div>
+                    <label class="time-slider">
+                        <span class="screen-reader-only">日期進度</span>
+                        <input id="time-slider" type="range" min="0" max="729" value="0">
+                        <span class="time-slider__bounds"><small>2025-01-01</small><small>2026-12-31</small></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="observatory-grid">
+                <div class="scene-stack">
+                    <article class="scene-panel scene-panel--earth panel">
+                        <div class="panel-heading">
+                            <div><span>01</span><h2>地日軌道模型</h2></div>
+                            <div class="scene-heading-actions">
+                                <output>23.4° AXIAL TILT</output>
+                                <button class="scene-reset" id="reset-earth-view" type="button">⟲ 視角重設</button>
+                            </div>
+                        </div>
+                        <div class="scene-host" id="scene-earth-sun" role="img" aria-label="地球繞太陽公轉的可旋轉三維教學模型">
+                            <p class="scene-instruction">拖曳軌道改變日期 · 拖曳地球改變自轉視角 · 空白處旋轉鏡頭</p>
+                            <output class="scene-event-badge scene-event-badge--dynamic" id="dynamic-sky-indicator" aria-live="polite" hidden></output>
+                            <output class="scene-event-badge" id="solar-eclipse-indicator" aria-live="polite" hidden></output>
+                            <p class="scene-loading">正在載入地日模型…</p>
+                        </div>
+                        <footer class="scene-caption"><span>圓形近似軌道</span><span>四季節點採近似日期</span><span>大小與距離非等比例</span></footer>
+                    </article>
+
+                    <article class="scene-panel scene-panel--moon panel">
+                        <div class="panel-heading">
+                            <div><span>02</span><h2>月地相位模型</h2></div>
+                            <div class="scene-heading-actions">
+                                <output>29.53059 DAYS</output>
+                                <button class="scene-reset" id="reset-moon-view" type="button">⟲ 視角重設</button>
+                            </div>
+                        </div>
+                        <div class="scene-host" id="scene-moon-earth" role="img" aria-label="月球繞地球運行與相位變化的可旋轉三維教學模型">
+                            <p class="scene-instruction">拖曳月球改變日期 · 空白處旋轉鏡頭</p>
+                            <p class="scene-loading">正在載入月地模型…</p>
+                        </div>
+                        <footer class="scene-caption"><span>太陽光固定由 +X 方向射入</span><span>軌道與天體比例經過誇張</span></footer>
+                    </article>
+                </div>
+
+                <aside class="data-stack" aria-label="日期、天文與氣象資料">
+                    <section class="overview-panel panel">
+                        <div class="panel-heading"><div><span>03</span><h2>觀測摘要</h2></div><output>TAIPEI REFERENCE</output></div>
+                        <div class="overview-grid">
+                            <article><span>公曆日期</span><strong id="overview-date">2025-01-01</strong></article>
+                            <article><span>農曆近似</span><strong id="overview-lunar">甲辰年 臘月初二</strong></article>
+                            <article><span>月相</span><strong id="overview-phase">眉月</strong></article>
+                            <article><span>臺北季節</span><strong id="overview-season">冬季</strong></article>
+                        </div>
+                    </section>
+
+                    <section class="moon-panel panel">
+                        <div class="panel-heading"><div><span>04</span><h2>月相與天文事件</h2></div><output>APPROXIMATION</output></div>
+                        <div class="moon-panel__body">
+                            <div class="moon-gauge">
+                                <canvas id="moon-phase-canvas" width="132" height="132" aria-label="目前月相示意圖"></canvas>
+                                <strong id="moon-phase-name">眉月</strong>
+                                <span id="moon-age">月齡 2.4 日</span>
+                                <span class="moon-reference">以臺北為觀測基準</span>
+                            </div>
+                            <div class="event-list-wrap">
+                                <h3>前後 10 日天文事件樣本</h3>
+                                <p class="event-window-note">清單 ±10 日 · 流星動態 ±1 日 · 彗星動態 ±10 日</p>
+                                <ul class="event-list" id="event-list"></ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="weather-panel panel">
+                        <div class="panel-heading"><div><span>05</span><h2>季節溫度模型</h2></div><output id="weather-data-status">SIMULATED DATA</output></div>
+                        <div class="global-indicator">
+                            <span id="global-temperature-label">全球基準訊號</span>
+                            <strong id="global-temperature">14.80 °C</strong>
+                        </div>
+                        <div class="weather-list" id="weather-list"></div>
+                        <p class="missing-data-note" id="missing-data-note" hidden>此時段刻意留白，用來示範資料缺漏，不代表真實觀測站停止運作。</p>
+                        <p class="weather-source-note">缺漏值補抓來源：<a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noreferrer">Open-Meteo Historical Weather API</a>／<a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Forecast API</a>。僅在本地模型回傳缺漏時請求。</p>
+                    </section>
+                </aside>
+            </section>
+
+            <p class="network-note">3D 場景從 CDN 載入 Three.js，並使用外部地球與月球紋理；缺漏氣溫則視日期嘗試由 Open-Meteo 補抓。離線時本地日期與模型仍可操作，但 3D 與遠端補值可能無法使用。</p>
+        </main>
+    </div>
+
+    <div class="modal" id="modal-guide" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+            <header class="modal__header"><h2 id="guide-title">軌道觀測站操作說明</h2><button class="modal__close" type="button" data-close-modal aria-label="關閉操作說明">×</button></header>
+            <div class="modal__body">
+                <ol class="guide-list">
+                    <li><strong>設定日期：</strong>使用年月日選單、日期滑桿或 ±1 日按鈕；兩個 3D 場景與所有資訊卡會同步更新。</li>
+                    <li><strong>操作地日模型：</strong>拖曳軌道觸控環可前後移動日期；拖曳地球可改變自轉偏移；拖曳空白處可旋轉鏡頭。</li>
+                    <li><strong>操作月地模型：</strong>拖曳月球觸控環，日期會移到鄰近的目標月相；拖曳空白處可旋轉鏡頭。</li>
+                    <li><strong>重設視角：</strong>兩個 3D 場景右上角各有「視角重設」，可恢復相機位置、朝向與縮放。</li>
+                    <li><strong>比較事件：</strong>事件清單只顯示所選日期前後 10 日；每筆事件均分列觀測時段或條件與可觀測區域。流星雨極大日前後會在地球附近顯示流星動態，3I/ATLAS 最近地球日前後則顯示帶有背日彗尾的教學軌跡。</li>
+                    <li><strong>辨認幾何：</strong>對照日月蝕、衝、東大距與西大距樣本。日全蝕完整遮住太陽、日偏蝕只遮住部分圓面；月蝕樣本日的月相與 3D 月球顯示紅銅色。</li>
+                </ol>
+            </div>
+            <footer class="modal__footer"><button class="button button--primary" type="button" data-close-modal>開始觀測</button></footer>
+        </section>
+    </div>
+
+    <div class="modal" id="modal-principle" aria-hidden="true">
+        <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="principle-title">
+            <header class="modal__header"><h2 id="principle-title">模型、公式與教學限制</h2><button class="modal__close" type="button" data-close-modal aria-label="關閉模型說明">×</button></header>
+            <div class="modal__body">
+                <div class="formula-grid">
+                    <article><strong>地球公轉角</strong><p>θ = 2π × 年內日序 ÷ 365</p></article>
+                    <article><strong>月相週期</strong><p>p = 經過日數 ÷ 29.53059 的餘數</p></article>
+                    <article><strong>季節溫度訊號</strong><p>T = 基準溫度 + 振幅 × cos(季節相位)</p></article>
+                    <article><strong>同一日期同步</strong><p>日期狀態 → 軌道位置、月相、事件、溫度</p></article>
+                    <article><strong>衝</strong><p>由地球看，外行星與太陽的方向約相差 180°</p></article>
+                    <article><strong>東／西大距</strong><p>由地球看，內行星與太陽的角距達到局部最大</p></article>
+                </div>
+                <ul class="principle-list">
+                    <li>地日與月地軌道用圓形和等速運動近似；真實軌道為橢圓，速率也不是固定值。</li>
+                    <li>地軸以約 23.4° 傾角示意；本工具沒有完整計算黃赤交角、月球約 5° 軌道傾角、歲差、章動或日月蝕幾何。</li>
+                    <li>農曆採月份起點表，節氣採等間隔近似，事件清單是教學樣本，不可用於曆法、觀測或行程決策。</li>
+                    <li>日蝕遮擋與紅銅色月光只在事件資料明確標記的樣本日期出現，不是由月相或真實日月蝕幾何即時計算。</li>
+                    <li>流星線條與彗星軌跡是用來辨認事件類型的動畫，不代表真實流星數量、輻射點、彗星軌道、亮度或即時天空位置。</li>
+                    <li>氣溫預設為可重現的週期函數；缺漏時才嘗試讀取 Open-Meteo 歷史再分析或近期預報。超出預報範圍的未來日期不會虛構補值。</li>
+                </ul>
+                <aside class="event-reference event-reference--modal"><strong>日期範圍外參考｜不受目前日期篩選</strong><span id="transit-reference-text">2025–2026 沒有水星或金星凌日；下一次水星凌日為 2032-11-13，超出目前日期軸。</span><span class="event-reference__region"><b>可觀測區域</b><span id="transit-reference-region">歐洲、亞洲、澳洲、非洲、南美洲、北美洲南部與東部、南極洲及鄰近海域；部分地區僅可見部分過程</span></span><a href="https://eclipse.gsfc.nasa.gov/transit/catalog/MercuryCatalog.html" target="_blank" rel="noreferrer">NASA 凌日目錄</a><a href="https://eclipse.gsfc.nasa.gov/transit/catalog/Visible.html" target="_blank" rel="noreferrer">NASA 凌日可見性計算</a></aside>
+                <p class="source-note">背景參考：<a href="https://science.nasa.gov/moon/moon-phases/" target="_blank" rel="noreferrer">NASA Moon Phases</a>、<a href="https://science.nasa.gov/solar-system/moon/what-you-need-to-know-about-the-march-2025-total-lunar-eclipse/" target="_blank" rel="noreferrer">NASA 2025 Lunar Eclipse</a>、<a href="https://science.nasa.gov/solar-system/moon/march-2026-total-lunar-eclipse-your-questions-answered/" target="_blank" rel="noreferrer">NASA 2026 Lunar Eclipse</a>、<a href="https://eclipse.gsfc.nasa.gov/SEdecade/SEdecade2021.html" target="_blank" rel="noreferrer">NASA Solar Eclipse Visibility</a>、<a href="https://science.nasa.gov/solar-system/meteors-meteorites/facts/" target="_blank" rel="noreferrer">NASA Meteor Showers</a>、<a href="https://science.nasa.gov/solar-system/meteors-meteorites/eta-aquarids/" target="_blank" rel="noreferrer">NASA Eta Aquariids</a>、<a href="https://science.nasa.gov/solar-system/comets/3i-atlas/3i-atlas-facts-and-faqs/" target="_blank" rel="noreferrer">NASA 3I/ATLAS Facts</a>、<a href="https://science.nasa.gov/skywatching/faq/" target="_blank" rel="noreferrer">NASA Skywatching FAQ</a>、<a href="https://ssd.jpl.nasa.gov/horizons/" target="_blank" rel="noreferrer">NASA/JPL Horizons</a>、<a href="https://eclipse.gsfc.nasa.gov/transit/catalog/MercuryCatalog.html" target="_blank" rel="noreferrer">NASA Mercury Transit Catalog</a>、<a href="https://eclipse.gsfc.nasa.gov/transit/catalog/Visible.html" target="_blank" rel="noreferrer">NASA Transit Visibility</a>。</p>
+            </div>
+            <footer class="modal__footer"><button class="button button--primary" type="button" data-close-modal>了解模型</button></footer>
+        </section>
+    </div>
+</body>
+</html>
