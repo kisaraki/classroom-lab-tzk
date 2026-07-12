@@ -33,7 +33,7 @@
             </button>
 
             <section class="stage" aria-label="左側解算展示區域">
-                <canvas id="trajectory-canvas" aria-label="可縮放與拖曳的拋體軌跡座標畫面，包含發射點 P1、y 等於 0 的地表與速度向量"></canvas>
+                <canvas id="trajectory-canvas" aria-label="可縮放與拖曳的拋體軌跡座標畫面，包含發射點 P、y 等於 0 的地表、P 初速度 V P0 與 V 0,x、V 0,y 分量向量"></canvas>
                 <div class="stage-guide">滾輪或按鈕縮放 · 長按左鍵拖曳畫面</div>
                 <div class="stage-tools">
                     <button class="button" id="btn-guide" type="button" aria-label="操作說明">
@@ -57,10 +57,21 @@
                     <button id="btn-zoom-in" type="button" aria-label="放大畫面" title="放大畫面">＋</button>
                 </div>
 
+                <div class="stage-display-controls" role="group" aria-label="P 點相關線段顯示控制">
+                    <button class="stage-display-toggle" id="btn-toggle-p-lines" type="button" aria-pressed="true" aria-label="切換 P 點所有向量及拋物線顯示">
+                        <span class="stage-display-toggle__indicator" aria-hidden="true"></span>
+                        <span>顯示 P 點所有向量及拋物線</span>
+                    </button>
+                    <button class="stage-display-toggle" id="btn-toggle-p-components" type="button" aria-pressed="true" aria-label="切換 P 初速度 V P0 分量顯示">
+                        <span class="stage-display-toggle__indicator" aria-hidden="true"></span>
+                        <span>顯示 V<sub>P0</sub>分量</span>
+                    </button>
+                </div>
+
                 <aside class="stage-observation" aria-labelledby="stage-observation-title">
                     <h2 id="stage-observation-title">觀察重點</h2>
                     <ul>
-                        <li>y = 0 固定表示地表；y 值可視為海拔或垂直距離。</li>
+                        <li>y = 0 固定表示地表；y 值可視為海拔或垂直位移。</li>
                         <li>X 表示從發射點量起的水平位移X。</li>
                         <li>相同初速與角度下，H 越高通常飛得越久、越遠。</li>
                     </ul>
@@ -79,7 +90,7 @@
 
                 <section class="parameter-panel" aria-label="參數設定">
                     <label class="control-card" for="input-v0">
-                        <span class="control-card__label">初速 V₀</span>
+                        <span class="control-card__label">P 初速度 V<sub>P0</sub></span>
                         <output class="control-card__value" id="v0-value" for="input-v0">50 m/s</output>
                         <input id="input-v0" type="range" min="5" max="500" value="50" step="1">
                     </label>
@@ -119,50 +130,50 @@
 
                         <article class="formula-card formula-card--cyan">
                             <span class="formula-card__number">01</span>
-                            <h3>水平初速度</h3>
-                            <p class="formula-equation">V<sub>x</sub> = V₀<span class="formula-dot">‧</span>cos α</p>
-                            <p class="formula-substitution" id="formula-horizontal-velocity">Vx = -- m/s</p>
+                            <h3>V<sub>0,x</sub>分量</h3>
+                            <p class="formula-equation">V<sub>0,x</sub> = V<sub>P0</sub><span class="formula-dot">‧</span>cos α</p>
+                            <p class="formula-substitution" id="formula-horizontal-velocity">V<sub>0,x</sub> = -- m/s</p>
                         </article>
 
                         <article class="formula-card formula-card--lime">
                             <span class="formula-card__number">02</span>
-                            <h3>垂直初速度</h3>
-                            <p class="formula-equation">V<sub>y</sub> = V₀<span class="formula-dot">‧</span>sin α</p>
-                            <p class="formula-substitution" id="formula-vertical-velocity">Vy = -- m/s</p>
+                            <h3>V<sub>0,y</sub>分量</h3>
+                            <p class="formula-equation">V<sub>0,y</sub> = V<sub>P0</sub><span class="formula-dot">‧</span>sin α</p>
+                            <p class="formula-substitution" id="formula-vertical-velocity">V<sub>0,y</sub> = -- m/s</p>
                         </article>
 
                         <article class="formula-card formula-card--blue">
                             <span class="formula-card__number">03</span>
                             <h3>飛行時間</h3>
-                            <p class="formula-equation">t = <span class="formula-fraction"><span>V<sub>y</sub> + √(V<sub>y</sub>² + 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>H)</span><span>g</span></span></p>
+                            <p class="formula-equation">t = <span class="formula-fraction"><span>V<sub>0,y</sub> + √(V<sub>0,y</sub>² + 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>H)</span><span>g</span></span></p>
                             <p class="formula-substitution" id="formula-time">t = -- s</p>
                         </article>
 
                         <article class="formula-card formula-card--violet">
                             <span class="formula-card__number">04</span>
                             <h3>抵達最高點時間</h3>
-                            <p class="formula-equation">t<sub>最高</sub> = <span class="formula-fraction"><span>V<sub>y</sub></span><span>g</span></span></p>
+                            <p class="formula-equation">t<sub>最高</sub> = <span class="formula-fraction"><span>V<sub>0,y</sub></span><span>g</span></span></p>
                             <p class="formula-substitution" id="formula-peak-time">t最高 = -- s</p>
                         </article>
 
                         <article class="formula-card formula-card--amber">
                             <span class="formula-card__number">05</span>
                             <h3>水平位移X</h3>
-                            <p class="formula-equation">X = V<sub>x</sub><span class="formula-dot">‧</span>t</p>
+                            <p class="formula-equation">X = V<sub>0,x</sub><span class="formula-dot">‧</span>t</p>
                             <p class="formula-substitution" id="formula-horizontal">X = -- m</p>
                         </article>
 
                         <article class="formula-card formula-card--orange formula-card--peak">
                             <span class="formula-card__number">06</span>
                             <h3>最高點垂直位移Y</h3>
-                            <p class="formula-equation">最高點垂直位移Y（海拔） = H + <span class="formula-fraction"><span>V<sub>y</sub>²</span><span>2<span class="formula-dot">‧</span>g</span></span></p>
+                            <p class="formula-equation">最高點垂直位移Y（海拔） = H + <span class="formula-fraction"><span>V<sub>0,y</sub>²</span><span>2<span class="formula-dot">‧</span>g</span></span></p>
                             <p class="formula-substitution" id="formula-peak-altitude">最高點垂直位移Y（海拔） = -- m</p>
                         </article>
 
                         <button class="solve-card" id="btn-solve" type="button">
-                            <span class="formula-card__number">08</span>
+                            <span class="formula-card__number">07</span>
                             <span class="solve-card__icon" aria-hidden="true">▶</span>
-                            <strong>解算</strong>
+                            <strong>P軌跡解算</strong>
                             <small id="solve-state">READY</small>
                         </button>
                     </div>
@@ -184,11 +195,11 @@
             </header>
 
             <div class="modal__body">
-                <p>本實驗固定以 y = 0 表示地表。設定參數後按下「解算」，軌跡才會以動畫方式從 P1 繪製至地表落點 T。</p>
+                <p>本實驗固定以 y = 0 表示地表。設定參數後按下「P軌跡解算」，軌跡才會以動畫方式從 P 繪製至地表落點 T。</p>
 
                 <ol class="guide-step-list">
                     <li>
-                        <strong>設定初速 V₀</strong>
+                        <strong>設定 P 初速度 V<sub>P0</sub></strong>
                         <span>初速越大，飛行時間與水平位移X通常越大。</span>
                     </li>
                     <li>
@@ -201,15 +212,19 @@
                     </li>
                     <li>
                         <strong>判讀結果</strong>
-                        <span>黃色 P1 點是發射點，綠色 T 點是 y = 0 的地表落點；X 表示水平位移X，Y 表示垂直位移（海拔）。</span>
+                        <span>黃色 P 點是發射點，綠色 T 點是 y = 0 的地表落點；X 表示水平位移X，Y 表示垂直位移（海拔）。</span>
                     </li>
                     <li>
                         <strong>執行解算</strong>
-                        <span>參數變更會清除舊軌跡；按下「解算」後才播放青色拋物線動畫，完成時顯示 T 點與結果。</span>
+                        <span>參數變更會清除舊軌跡；按下「P軌跡解算」後才播放青色拋物線動畫，完成時顯示 T 點與結果。</span>
                     </li>
                     <li>
                         <strong>縮放與平移畫面</strong>
                         <span>使用滑鼠滾輪或畫面上的 −、＋ 按鈕無段縮放；按 1:1 恢復預設比例，長按滑鼠左鍵拖曳可平移畫面，按 ⤢ 可重新適合目前軌跡。</span>
+                    </li>
+                    <li>
+                        <strong>切換 P 點線段</strong>
+                        <span>使用左側解算展示區域下方的兩個按鈕，可整批切換 P 點所有向量與拋物線，或以「顯示 V<sub>P0</sub>分量」同時切換 V<sub>0,x</sub>、V<sub>0,y</sub>；這些操作只改變線段顯示，不會清除參數、公式數值或解算結果。</span>
                     </li>
                     <li>
                         <strong>切換參數控制區</strong>
@@ -230,8 +245,8 @@
                             <span class="kinematics-row__tag">TRIG</span>
                             <strong>初速三角分解</strong>
                         </div>
-                        <p class="kinematics-row__formula">V<sub>x</sub> = V₀<span class="formula-dot">‧</span>cos α<br>V<sub>y</sub> = V₀<span class="formula-dot">‧</span>sin α</p>
-                        <p>先把 V₀ 分解到水平與垂直方向，得到結果卡 01、02，並供後續四張卡使用。</p>
+                        <p class="kinematics-row__formula">V<sub>0,x</sub> = V<sub>P0</sub><span class="formula-dot">‧</span>cos α<br>V<sub>0,y</sub> = V<sub>P0</sub><span class="formula-dot">‧</span>sin α</p>
+                        <p>先把 P 初速度 V<sub>P0</sub> 分解到水平與垂直方向，得到結果卡 01、02，並供後續四張卡使用。</p>
                     </div>
 
                     <div class="kinematics-row">
@@ -239,8 +254,8 @@
                             <span class="kinematics-row__tag">BASE 01</span>
                             <strong>v = v₀ + a<span class="formula-dot">‧</span>t</strong>
                         </div>
-                        <p class="kinematics-row__formula">v<sub>y</sub>(t) = V<sub>y</sub> − g<span class="formula-dot">‧</span>t<br>0 = V<sub>y</sub> − g<span class="formula-dot">‧</span>t<sub>最高</sub></p>
-                        <p>最高點的垂直速度為 0，因此得到結果卡 04：t<sub>最高</sub> = V<sub>y</sub>/g。</p>
+                        <p class="kinematics-row__formula">v<sub>y</sub>(t) = V<sub>0,y</sub> − g<span class="formula-dot">‧</span>t<br>0 = V<sub>0,y</sub> − g<span class="formula-dot">‧</span>t<sub>最高</sub></p>
+                        <p>最高點的垂直速度為 0，因此得到結果卡 04：t<sub>最高</sub> = V<sub>0,y</sub>/g。</p>
                     </div>
 
                     <div class="kinematics-row">
@@ -248,7 +263,7 @@
                             <span class="kinematics-row__tag">BASE 02</span>
                             <strong>x = v₀<span class="formula-dot">‧</span>t + <span class="formula-fraction"><span>1</span><span>2</span></span>a<span class="formula-dot">‧</span>t²</strong>
                         </div>
-                        <p class="kinematics-row__formula">Y = H + V<sub>y</sub><span class="formula-dot">‧</span>t − <span class="formula-fraction"><span>1</span><span>2</span></span>g<span class="formula-dot">‧</span>t²<br>X = V<sub>x</sub><span class="formula-dot">‧</span>t</p>
+                        <p class="kinematics-row__formula">Y = H + V<sub>0,y</sub><span class="formula-dot">‧</span>t − <span class="formula-fraction"><span>1</span><span>2</span></span>g<span class="formula-dot">‧</span>t²<br>X = V<sub>0,x</sub><span class="formula-dot">‧</span>t</p>
                         <p>令落地時 Y = 0 並取非負時間根，得到結果卡 03；水平方向因 a<sub>x</sub> = 0，直接得到結果卡 05。</p>
                     </div>
 
@@ -257,8 +272,8 @@
                             <span class="kinematics-row__tag">BASE 03</span>
                             <strong>v² = v₀² + 2<span class="formula-dot">‧</span>a<span class="formula-dot">‧</span>x</strong>
                         </div>
-                        <p class="kinematics-row__formula">0 = V<sub>y</sub>² − 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>(Y<sub>最高</sub> − H)</p>
-                        <p>最高點令 v<sub>y</sub> = 0，解得結果卡 06：Y<sub>最高</sub> = H + V<sub>y</sub>²/(2‧g)。</p>
+                        <p class="kinematics-row__formula">0 = V<sub>0,y</sub>² − 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>(Y<sub>最高</sub> − H)</p>
+                        <p>最高點令 v<sub>y</sub> = 0，解得結果卡 06：Y<sub>最高</sub> = H + V<sub>0,y</sub>²/(2‧g)。</p>
                     </div>
                 </section>
 
@@ -284,11 +299,11 @@
                 <p>右側參數控制區的「解算結果」會隨滑桿同步更新，方便直接比較參數與結果。</p>
 
                 <ul class="principle-list">
-                    <li><strong>座標約定：</strong>x 軸沿水平方向，y = 0 是地表；正 y 值可等效理解為海拔或相對地表的垂直距離。</li>
-                    <li><strong>速度分量：</strong>水平初速度為 V₀‧cos α，垂直初速度為 V₀‧sin α，角度 α 一律以度表示。</li>
-                    <li><strong>落地條件：</strong>令 y(t) = H + V₀‧sin α‧t − 4.9‧t² = 0，取非負時間根作為落地時間。</li>
+                    <li><strong>座標約定：</strong>x 軸沿水平方向，y = 0 是地表；正 y 值可等效理解為海拔或相對地表的垂直位移。</li>
+                    <li><strong>速度分量：</strong>P 初速度為 V<sub>P0</sub>，其 X 分量為 V<sub>0,x</sub> = V<sub>P0</sub>‧cos α，Y 分量為 V<sub>0,y</sub> = V<sub>P0</sub>‧sin α，角度 α 一律以度表示。</li>
+                    <li><strong>落地條件：</strong>令 y(t) = H + V<sub>P0</sub>‧sin α‧t − 4.9‧t² = 0，取非負時間根作為落地時間。</li>
                     <li><strong>位移觀念：</strong>X 表示從發射點到落點的水平位移X；H 與軌跡上的 Y 值表示垂直位移（海拔），最高值以最高點垂直位移Y（海拔）表示。</li>
-                    <li><strong>解算流程：</strong>參數只即時更新公式；按下「解算」才繪製軌跡與 T 點。座標視野由使用者縮放或拖曳控制，不會因調整參數而自動改變。</li>
+                    <li><strong>解算流程：</strong>參數只即時更新公式；按下「P軌跡解算」才繪製軌跡與 T 點。座標視野由使用者縮放或拖曳控制，不會因調整參數而自動改變。</li>
                 </ul>
 
                 <p class="teaching-note"><strong>教學限制：</strong>這是課堂幾何與運動學示範，不包含空氣阻力、風、彈體旋轉、地球曲率或真實砲彈外彈道。</p>

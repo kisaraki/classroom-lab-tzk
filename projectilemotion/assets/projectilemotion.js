@@ -31,6 +31,11 @@
     const zoomOutButton = document.getElementById("btn-zoom-out");
     const defaultScaleButton = document.getElementById("btn-default-scale");
     const fitViewButton = document.getElementById("btn-fit-view");
+    const stageDisplayControls = document.querySelector(".stage-display-controls");
+    const displayToggleButtons = {
+        all: document.getElementById("btn-toggle-p-lines"),
+        components: document.getElementById("btn-toggle-p-components"),
+    };
     const projectileLayout = document.querySelector(".projectile-layout");
     const stage = document.querySelector(".stage");
     const controlPanelToggle = document.getElementById("btn-toggle-control-panel");
@@ -55,6 +60,12 @@
         pointerId: null,
         lastX: 0,
         lastY: 0,
+    };
+    const displayState = {
+        launchVector: true,
+        horizontalVector: true,
+        verticalVector: true,
+        trajectory: true,
     };
     let solvedCalculation = null;
     let animationProgress = 0;
@@ -172,13 +183,13 @@
 
         setFormulaOutput(
             outputs.formulaHorizontalVelocity,
-            `V<sub>x</sub> = ${state.v0}${dot}cos ${angle} = ${formulaResult(horizontalVelocityResult)}`,
-            `Vx = ${state.v0} ‧ cos ${angle} = ${horizontalVelocityResult}`
+            `V<sub>0,x</sub> = ${state.v0}${dot}cos ${angle} = ${formulaResult(horizontalVelocityResult)}`,
+            `V 0,x = ${state.v0} ‧ cos ${angle} = ${horizontalVelocityResult}`
         );
         setFormulaOutput(
             outputs.formulaVerticalVelocity,
-            `V<sub>y</sub> = ${state.v0}${dot}sin ${angle} = ${formulaResult(verticalVelocityResult)}`,
-            `Vy = ${state.v0} ‧ sin ${angle} = ${verticalVelocityResult}`
+            `V<sub>0,y</sub> = ${state.v0}${dot}sin ${angle} = ${formulaResult(verticalVelocityResult)}`,
+            `V 0,y = ${state.v0} ‧ sin ${angle} = ${verticalVelocityResult}`
         );
         setFormulaOutput(
             outputs.formulaTime,
@@ -238,7 +249,11 @@
         const left = width < 480 ? 48 : 70;
         const right = Math.max(left + 10, width - 34);
         const top = 46;
-        const bottom = Math.max(top + 10, height - 34);
+        const displayControlsHeight = stageDisplayControls
+            ? stageDisplayControls.getBoundingClientRect().height
+            : 40;
+        const bottomInset = Math.max(34, Math.ceil(displayControlsHeight) + 28);
+        const bottom = Math.max(top + 10, height - bottomInset);
 
         return {
             left,
@@ -335,14 +350,16 @@
         drawAltitudeGuide(projector);
 
         if (solvedCalculation) {
-            drawTrajectory(solvedCalculation, projector, animationProgress);
+            if (displayState.trajectory) {
+                drawTrajectory(solvedCalculation, projector, animationProgress);
+            }
             if (animationProgress >= 1) {
                 drawPoint(projector.toCanvas(solvedCalculation.horizontalDistance, 0), "T", "#62e6a6", 12, -30);
             }
         }
 
         drawVelocityVectors(pendingCalculation, projector);
-        drawPoint(projector.toCanvas(0, state.height), "P1", "#ffc75a", -24, -12);
+        drawPoint(projector.toCanvas(0, state.height), "P", "#ffc75a", -18, -12);
 
     }
 
@@ -476,7 +493,7 @@
         ctx.rotate(-Math.PI / 2);
         ctx.fillStyle = "#ffc75a";
         ctx.font = "700 12px Microsoft JhengHei, sans-serif";
-        ctx.fillText("y 海拔／垂直距離", 0, 0);
+        ctx.fillText("y 海拔／垂直位移", 0, 0);
         ctx.restore();
     }
 
@@ -603,24 +620,36 @@
         const maximumVectorLength = clamp(projector.plot.width * 0.2, 96, 164);
         const vectorLength = minimumVectorLength
             + (maximumVectorLength - minimumVectorLength) * Math.sqrt(speedRatio);
-        const velocityScale = vectorLength / Math.max(calc.v0, 1);
+        const referenceScale = Number.isFinite(view.defaultScale) && view.defaultScale > 0
+            ? view.defaultScale
+            : view.scale;
+        const zoomRatio = view.scale / Math.max(referenceScale, Number.EPSILON);
+        const velocityScale = (vectorLength * zoomRatio) / Math.max(calc.v0, 1);
         const dx = calc.horizontalVelocity * velocityScale;
         const dy = -calc.verticalVelocity * velocityScale;
         const horizontalEnd = { x: start.x + dx, y: start.y };
         const verticalEnd = { x: start.x, y: start.y + dy };
         const velocityEnd = { x: start.x + dx, y: start.y + dy };
 
-        drawArrow(start, horizontalEnd, "#5db7ff", [6, 5]);
-        drawArrow(start, verticalEnd, "#a78bfa", [6, 5]);
-        drawArrow(start, velocityEnd, "#ffc75a");
+        if (displayState.horizontalVector) {
+            drawArrow(start, horizontalEnd, "#5db7ff", [6, 5]);
+        }
+        if (displayState.verticalVector) {
+            drawArrow(start, verticalEnd, "#a78bfa", [6, 5]);
+        }
+        if (displayState.launchVector) {
+            drawArrow(start, velocityEnd, "#ffc75a");
+        }
 
-        if (Math.abs(dx) > 4) {
-            drawCanvasLabel("Vx", horizontalEnd.x + 7, horizontalEnd.y + 18, "#5db7ff");
+        if (displayState.horizontalVector && Math.abs(dx) > 4) {
+            drawCanvasVariableLabel("0,x", horizontalEnd.x + 7, horizontalEnd.y + 18, "#5db7ff");
         }
-        if (Math.abs(dy) > 4) {
-            drawCanvasLabel("Vy", verticalEnd.x + 8, verticalEnd.y - 4, "#a78bfa");
+        if (displayState.verticalVector && Math.abs(dy) > 4) {
+            drawCanvasVariableLabel("0,y", verticalEnd.x + 8, verticalEnd.y - 4, "#a78bfa");
         }
-        drawCanvasLabel("V₀", velocityEnd.x + 8, velocityEnd.y - 8, "#ffc75a");
+        if (displayState.launchVector && Math.hypot(dx, dy) > 4) {
+            drawCanvasVariableLabel("P0", velocityEnd.x + 8, velocityEnd.y - 8, "#ffc75a");
+        }
     }
 
     function drawArrow(start, end, color, dash = []) {
@@ -674,6 +703,29 @@
         ctx.fill();
         ctx.fillStyle = color;
         ctx.fillText(text, x + 2, y);
+        ctx.restore();
+    }
+
+    function drawCanvasVariableLabel(subscript, x, y, color) {
+        const baseFont = "700 13px Microsoft JhengHei, sans-serif";
+        const subscriptFont = "700 9px Microsoft JhengHei, sans-serif";
+
+        ctx.save();
+        ctx.font = baseFont;
+        const baseWidth = ctx.measureText("V").width;
+        ctx.font = subscriptFont;
+        const subscriptWidth = ctx.measureText(subscript).width;
+        const width = baseWidth + subscriptWidth + 18;
+        const height = 25;
+
+        roundedRect(ctx, x - 6, y - 17, width, height, 5);
+        ctx.fillStyle = "rgba(6, 16, 30, 0.78)";
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.font = baseFont;
+        ctx.fillText("V", x + 2, y);
+        ctx.font = subscriptFont;
+        ctx.fillText(subscript, x + 2 + baseWidth, y + 4);
         ctx.restore();
     }
 
@@ -873,6 +925,51 @@
         render();
     }
 
+    function getPLineVisibility() {
+        return [
+            displayState.launchVector,
+            displayState.horizontalVector,
+            displayState.verticalVector,
+            displayState.trajectory,
+        ];
+    }
+
+    function syncDisplayToggleStates() {
+        const visibility = getPLineVisibility();
+        const allVisible = visibility.every(Boolean);
+        const anyVisible = visibility.some(Boolean);
+
+        displayToggleButtons.all.setAttribute(
+            "aria-pressed",
+            allVisible ? "true" : (anyVisible ? "mixed" : "false")
+        );
+        displayToggleButtons.all.title = anyVisible
+            ? "隱藏 P 點所有向量及拋物線"
+            : "顯示 P 點所有向量及拋物線";
+        const componentsVisible = displayState.horizontalVector && displayState.verticalVector;
+        displayToggleButtons.components.setAttribute("aria-pressed", String(componentsVisible));
+        displayToggleButtons.components.title = componentsVisible
+            ? "隱藏 P 初速度 V P0 分量"
+            : "顯示 P 初速度 V P0 分量";
+    }
+
+    function setAllPLinesVisible(visible) {
+        displayState.launchVector = visible;
+        displayState.horizontalVector = visible;
+        displayState.verticalVector = visible;
+        displayState.trajectory = visible;
+        syncDisplayToggleStates();
+        render();
+    }
+
+    function toggleComponentVectors() {
+        const visible = !(displayState.horizontalVector && displayState.verticalVector);
+        displayState.horizontalVector = visible;
+        displayState.verticalVector = visible;
+        syncDisplayToggleStates();
+        render();
+    }
+
     Object.values(controls).forEach((control) => {
         control.addEventListener("input", () => {
             syncStateFromControls();
@@ -882,6 +979,10 @@
     });
 
     solveButton.addEventListener("click", startSolve);
+    displayToggleButtons.all.addEventListener("click", () => {
+        setAllPLinesVisible(!getPLineVisibility().some(Boolean));
+    });
+    displayToggleButtons.components.addEventListener("click", toggleComponentVectors);
     controlPanelToggle.addEventListener("click", () => {
         setControlPanelCollapsed(!projectileLayout.classList.contains("is-control-collapsed"));
     });
@@ -969,6 +1070,7 @@
     }
 
     syncStateFromControls();
+    syncDisplayToggleStates();
     setSolveStatus("等待解算", "READY");
     resizeCanvas();
 })();
