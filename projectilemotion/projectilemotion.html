@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="以互動式畫布探索斜面上的拋體運動，觀察初速、角度、斜面與高度如何影響飛行時間與落點。">
+    <meta name="description" content="以互動式畫布探索拋體運動，觀察初速、發射角與發射點高度H（Y軸）如何影響飛行時間、水平位移X與落點。">
     <meta name="theme-color" content="#06101e">
     <title>拋體運動實驗室｜Classroom Lab tzk</title>
     <link rel="stylesheet" href="../assets/css/shared.css">
@@ -24,138 +24,147 @@
         </header>
 
         <main class="projectile-layout">
-            <section class="stage" aria-label="拋體運動視覺化畫布">
-                <canvas id="trajectory-canvas" aria-label="拋物線軌跡、斜面與座標軸示意圖"></canvas>
-                <div class="stage-guide">調整右側滑桿 · 觀察軌跡與落點即時變化</div>
+            <button class="control-panel-fullscreen" id="btn-fullscreen-control-panel" type="button" aria-controls="control-panel" aria-pressed="false" aria-label="向左全螢幕顯示右側參數控制區" title="向左全螢幕顯示右側參數控制區">
+                <span class="control-panel-icon" id="control-panel-fullscreen-icon" aria-hidden="true">‹</span>
+            </button>
+
+            <button class="control-panel-toggle" id="btn-toggle-control-panel" type="button" aria-controls="control-panel" aria-expanded="true" aria-label="向右收合右側參數控制區" title="向右收合右側參數控制區">
+                <span class="control-panel-icon" id="control-panel-toggle-icon" aria-hidden="true">›</span>
+            </button>
+
+            <section class="stage" aria-label="左側解算展示區域">
+                <canvas id="trajectory-canvas" aria-label="可縮放與拖曳的拋體軌跡座標畫面，包含發射點 P1、y 等於 0 的地表與速度向量"></canvas>
+                <div class="stage-guide">滾輪或按鈕縮放 · 長按左鍵拖曳畫面</div>
                 <div class="stage-tools">
-                    <button class="button" id="btn-guide" type="button">
+                    <button class="button" id="btn-guide" type="button" aria-label="操作說明">
                         <span aria-hidden="true">?</span>
                         <span class="button-label">操作說明</span>
                     </button>
-                    <button class="button" id="btn-formula" type="button">
+                    <button class="button" id="btn-formula" type="button" aria-label="公式與原理">
                         <span aria-hidden="true">∑</span>
                         <span class="button-label">公式與原理</span>
                     </button>
                 </div>
 
                 <div class="trajectory-chip">
-                    TARGET / <strong id="stage-status">可與斜面交會</strong>
+                    STATUS / <strong id="stage-status">等待解算</strong>
+                </div>
+
+                <div class="stage-zoom" role="group" aria-label="畫面縮放控制">
+                    <button id="btn-zoom-out" type="button" aria-label="縮小畫面" title="縮小畫面">−</button>
+                    <button id="btn-default-scale" type="button" aria-label="恢復預設比例" title="預設比例">1:1</button>
+                    <button id="btn-fit-view" type="button" aria-label="適合目前軌跡" title="適合目前軌跡">⤢</button>
+                    <button id="btn-zoom-in" type="button" aria-label="放大畫面" title="放大畫面">＋</button>
                 </div>
 
                 <aside class="stage-observation" aria-labelledby="stage-observation-title">
                     <h2 id="stage-observation-title">觀察重點</h2>
                     <ul>
-                        <li>α 必須大於 θ，才會在正時間重新碰到斜面。</li>
-                        <li>H 只會平移場景，不改變相對運動。</li>
-                        <li>斜面越陡，落點海拔變化越明顯。</li>
+                        <li>y = 0 固定表示地表；y 值可視為海拔或垂直距離。</li>
+                        <li>X 表示從發射點量起的水平位移X。</li>
+                        <li>相同初速與角度下，H 越高通常飛得越久、越遠。</li>
                     </ul>
                 </aside>
 
             </section>
 
-            <aside class="control-panel" aria-label="拋體運動控制面板">
+            <aside class="control-panel" id="control-panel" aria-label="右側參數控制區">
                 <div class="panel-heading">
                     <div>
                         <p class="eyebrow">Ballistics console</p>
                         <h1>拋體運動實驗室</h1>
                     </div>
-                    <span class="panel-step">STEP 01—04</span>
+                    <span class="panel-step">STEP 01—03</span>
                 </div>
 
                 <section class="parameter-panel" aria-label="參數設定">
                     <label class="control-card" for="input-v0">
                         <span class="control-card__label">初速 V₀</span>
                         <output class="control-card__value" id="v0-value" for="input-v0">50 m/s</output>
-                        <input id="input-v0" type="range" min="5" max="180" value="50" step="1">
+                        <input id="input-v0" type="range" min="5" max="500" value="50" step="1">
                     </label>
 
                     <label class="control-card" for="input-alpha">
                         <span class="control-card__label">發射角 α</span>
-                        <span class="angle-value-group">
-                            <output class="control-card__value" id="alpha-value" for="input-alpha">45°</output>
-                            <output class="relative-angle-pill" id="alpha-relative-value" for="input-alpha input-theta">相對斜面 45°</output>
-                        </span>
+                        <output class="control-card__value" id="alpha-value" for="input-alpha">45°</output>
                         <input id="input-alpha" type="range" min="0" max="90" value="45" step="1">
                     </label>
 
-                    <label class="control-card control-card--violet" for="input-theta">
-                        <span class="control-card__label">斜面角 θ</span>
-                        <output class="control-card__value" id="theta-value" for="input-theta">0°</output>
-                        <input id="input-theta" type="range" min="-90" max="90" value="0" step="1">
-                    </label>
-
                     <label class="control-card control-card--amber" for="input-height">
-                        <span class="control-card__label">發射點海拔 H</span>
+                        <span class="control-card__label">發射點高度H（Y軸）</span>
                         <output class="control-card__value" id="height-value" for="input-height">0 m</output>
-                        <input id="input-height" type="range" min="0" max="1200" value="0" step="10">
+                        <input id="input-height" type="range" min="0" max="500" value="0" step="10">
                     </label>
                 </section>
 
                 <section class="formula-panel formula-current" aria-labelledby="current-title" aria-live="polite">
                     <div class="formula-panel__header">
                         <div>
-                            <p class="eyebrow">Live formula</p>
-                            <h2 id="current-title">即時計算公式</h2>
+                            <p class="eyebrow">Solution results</p>
+                            <h2 id="current-title">解算結果</h2>
                         </div>
-                        <span>拖動滑桿同步更新</span>
+                        <span>公式與數值逐項對應</span>
                     </div>
 
                     <div class="formula-card-grid">
+                        <article class="formula-card formula-card--base">
+                            <span class="formula-card__number">00</span>
+                            <h3>基本公式</h3>
+                            <div class="base-formula-list" aria-label="三項基本運動公式">
+                                <p class="formula-equation">v = v₀ + a<span class="formula-dot">‧</span>t</p>
+                                <p class="formula-equation">x = v₀<span class="formula-dot">‧</span>t + <span class="formula-fraction"><span>1</span><span>2</span></span>a<span class="formula-dot">‧</span>t²</p>
+                                <p class="formula-equation">v² = v₀² + 2<span class="formula-dot">‧</span>a<span class="formula-dot">‧</span>x</p>
+                            </div>
+                        </article>
+
                         <article class="formula-card formula-card--cyan">
                             <span class="formula-card__number">01</span>
-                            <h3>相對斜面角</h3>
-                            <p class="formula-equation">β = α − θ</p>
-                            <p class="formula-substitution" id="formula-relative-angle">β = 45° − 0° = 45°</p>
+                            <h3>水平初速度</h3>
+                            <p class="formula-equation">V<sub>x</sub> = V₀<span class="formula-dot">‧</span>cos α</p>
+                            <p class="formula-substitution" id="formula-horizontal-velocity">Vx = -- m/s</p>
                         </article>
 
                         <article class="formula-card formula-card--lime">
                             <span class="formula-card__number">02</span>
-                            <h3>飛行時間</h3>
-                            <p class="formula-equation">t = 2 × V₀ × sin(β) ÷ [9.8 × cos(θ)]</p>
-                            <p class="formula-substitution" id="formula-time">t = -- s</p>
+                            <h3>垂直初速度</h3>
+                            <p class="formula-equation">V<sub>y</sub> = V₀<span class="formula-dot">‧</span>sin α</p>
+                            <p class="formula-substitution" id="formula-vertical-velocity">Vy = -- m/s</p>
                         </article>
 
                         <article class="formula-card formula-card--blue">
                             <span class="formula-card__number">03</span>
-                            <h3>水平距離</h3>
-                            <p class="formula-equation">X = V₀ × cos(α) × t</p>
-                            <p class="formula-substitution" id="formula-horizontal">X = -- m</p>
+                            <h3>飛行時間</h3>
+                            <p class="formula-equation">t = <span class="formula-fraction"><span>V<sub>y</sub> + √(V<sub>y</sub>² + 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>H)</span><span>g</span></span></p>
+                            <p class="formula-substitution" id="formula-time">t = -- s</p>
                         </article>
 
                         <article class="formula-card formula-card--violet">
                             <span class="formula-card__number">04</span>
-                            <h3>斜面升降高度</h3>
-                            <p class="formula-equation">Y = X × tan(θ)</p>
-                            <p class="formula-substitution" id="formula-vertical">Y = -- m</p>
+                            <h3>抵達最高點時間</h3>
+                            <p class="formula-equation">t<sub>最高</sub> = <span class="formula-fraction"><span>V<sub>y</sub></span><span>g</span></span></p>
+                            <p class="formula-substitution" id="formula-peak-time">t最高 = -- s</p>
                         </article>
 
                         <article class="formula-card formula-card--amber">
                             <span class="formula-card__number">05</span>
-                            <h3>發射點到落點的斜面直線距離</h3>
-                            <p class="formula-equation">PT = √(X² + Y²)</p>
-                            <p class="formula-substitution" id="formula-distance">PT = -- m</p>
+                            <h3>水平位移X</h3>
+                            <p class="formula-equation">X = V<sub>x</sub><span class="formula-dot">‧</span>t</p>
+                            <p class="formula-substitution" id="formula-horizontal">X = -- m</p>
                         </article>
 
-                        <article class="formula-card formula-card--green">
+                        <article class="formula-card formula-card--orange formula-card--peak">
                             <span class="formula-card__number">06</span>
-                            <h3>落點海拔</h3>
-                            <p class="formula-equation">落點海拔 = H + Y</p>
-                            <p class="formula-substitution" id="formula-altitude">落點海拔 = -- m</p>
+                            <h3>最高點垂直位移Y</h3>
+                            <p class="formula-equation">最高點垂直位移Y（海拔） = H + <span class="formula-fraction"><span>V<sub>y</sub>²</span><span>2<span class="formula-dot">‧</span>g</span></span></p>
+                            <p class="formula-substitution" id="formula-peak-altitude">最高點垂直位移Y（海拔） = -- m</p>
                         </article>
 
-                        <article class="formula-card formula-card--pink">
-                            <span class="formula-card__number">07</span>
-                            <h3>到達最高點時間</h3>
-                            <p class="formula-equation">t<sub>最高</sub> = V₀ × sin(α) ÷ 9.8</p>
-                            <p class="formula-substitution" id="formula-peak-time">t最高 = -- s</p>
-                        </article>
-
-                        <article class="formula-card formula-card--orange">
+                        <button class="solve-card" id="btn-solve" type="button">
                             <span class="formula-card__number">08</span>
-                            <h3>最高點海拔</h3>
-                            <p class="formula-equation">最高點海拔 = H + V₀ × sin(α) × t<sub>最高</sub> − 4.9 × t<sub>最高</sub>²</p>
-                            <p class="formula-substitution" id="formula-peak-altitude">最高點海拔 = -- m</p>
-                        </article>
+                            <span class="solve-card__icon" aria-hidden="true">▶</span>
+                            <strong>解算</strong>
+                            <small id="solve-state">READY</small>
+                        </button>
                     </div>
                 </section>
 
@@ -175,32 +184,85 @@
             </header>
 
             <div class="modal__body">
-                <p>本實驗把發射點放在斜面上，讓你調整發射條件，觀察拋物線何時再次與斜面相交。</p>
+                <p>本實驗固定以 y = 0 表示地表。設定參數後按下「解算」，軌跡才會以動畫方式從 P1 繪製至地表落點 T。</p>
 
                 <ol class="guide-step-list">
                     <li>
                         <strong>設定初速 V₀</strong>
-                        <span>初速越大，飛行時間、水平距離與斜面距離通常越長。</span>
+                        <span>初速越大，飛行時間與水平位移X通常越大。</span>
                     </li>
                     <li>
                         <strong>調整發射角 α</strong>
-                        <span>α 是相對水平面的角度；它和斜面角 θ 的差值會決定能否有效交會。</span>
+                        <span>α 是相對水平面的角度，會改變水平與垂直初速度的比例。</span>
                     </li>
                     <li>
-                        <strong>調整斜面角 θ</strong>
-                        <span>正值表示上坡，負值表示下坡；紫色線會即時顯示斜面。</span>
-                    </li>
-                    <li>
-                        <strong>改變發射點海拔 H</strong>
-                        <span>H 會把發射點與斜面整體往上移，適合觀察「參考高度」和「相對運動」的差異。</span>
+                        <strong>改變發射點高度H（Y軸）</strong>
+                        <span>H 是發射點在 Y 軸上相對 y = 0 地表的高度；提高 H 會增加落地時間。</span>
                     </li>
                     <li>
                         <strong>判讀結果</strong>
-                        <span>若狀態顯示「軌跡有效」，綠色 T 點就是落點；若無效，紅色虛線代表目前發射條件不會在正時間命中斜面。</span>
+                        <span>黃色 P1 點是發射點，綠色 T 點是 y = 0 的地表落點；X 表示水平位移X，Y 表示垂直位移（海拔）。</span>
+                    </li>
+                    <li>
+                        <strong>執行解算</strong>
+                        <span>參數變更會清除舊軌跡；按下「解算」後才播放青色拋物線動畫，完成時顯示 T 點與結果。</span>
+                    </li>
+                    <li>
+                        <strong>縮放與平移畫面</strong>
+                        <span>使用滑鼠滾輪或畫面上的 −、＋ 按鈕無段縮放；按 1:1 恢復預設比例，長按滑鼠左鍵拖曳可平移畫面，按 ⤢ 可重新適合目前軌跡。</span>
+                    </li>
+                    <li>
+                        <strong>切換參數控制區</strong>
+                        <span>桌面版可按左右區域分界上的箭頭，將右側參數控制區向右收合；按收合按鈕上方的 ‹ 可向左全螢幕顯示，放大文字並透過半透明底色保留左側解算展示區域的視覺參照；全螢幕時按 › 可退出。</span>
                     </li>
                 </ol>
 
-                <p class="teaching-note"><strong>快速示範：</strong>按下「示範組合」可切換到一組較明顯的上坡彈道。</p>
+                <section class="kinematics-variants" aria-labelledby="kinematics-variants-title">
+                    <div class="kinematics-variants__heading">
+                        <p class="eyebrow">Kinematics variants</p>
+                        <h3 id="kinematics-variants-title">三個基本公式與本頁變體</h3>
+                    </div>
+
+                    <p class="kinematics-variants__intro">通式中的 <em>v</em>、<em>v₀</em>、<em>a</em> 與 <em>x</em> 都先指定同一個方向；本頁取向右與向上為正，水平方向 a<sub>x</sub> = 0，垂直方向 a<sub>y</sub> = −g，垂直初始位置為 H。</p>
+
+                    <div class="kinematics-row">
+                        <div>
+                            <span class="kinematics-row__tag">TRIG</span>
+                            <strong>初速三角分解</strong>
+                        </div>
+                        <p class="kinematics-row__formula">V<sub>x</sub> = V₀<span class="formula-dot">‧</span>cos α<br>V<sub>y</sub> = V₀<span class="formula-dot">‧</span>sin α</p>
+                        <p>先把 V₀ 分解到水平與垂直方向，得到結果卡 01、02，並供後續四張卡使用。</p>
+                    </div>
+
+                    <div class="kinematics-row">
+                        <div>
+                            <span class="kinematics-row__tag">BASE 01</span>
+                            <strong>v = v₀ + a<span class="formula-dot">‧</span>t</strong>
+                        </div>
+                        <p class="kinematics-row__formula">v<sub>y</sub>(t) = V<sub>y</sub> − g<span class="formula-dot">‧</span>t<br>0 = V<sub>y</sub> − g<span class="formula-dot">‧</span>t<sub>最高</sub></p>
+                        <p>最高點的垂直速度為 0，因此得到結果卡 04：t<sub>最高</sub> = V<sub>y</sub>/g。</p>
+                    </div>
+
+                    <div class="kinematics-row">
+                        <div>
+                            <span class="kinematics-row__tag">BASE 02</span>
+                            <strong>x = v₀<span class="formula-dot">‧</span>t + <span class="formula-fraction"><span>1</span><span>2</span></span>a<span class="formula-dot">‧</span>t²</strong>
+                        </div>
+                        <p class="kinematics-row__formula">Y = H + V<sub>y</sub><span class="formula-dot">‧</span>t − <span class="formula-fraction"><span>1</span><span>2</span></span>g<span class="formula-dot">‧</span>t²<br>X = V<sub>x</sub><span class="formula-dot">‧</span>t</p>
+                        <p>令落地時 Y = 0 並取非負時間根，得到結果卡 03；水平方向因 a<sub>x</sub> = 0，直接得到結果卡 05。</p>
+                    </div>
+
+                    <div class="kinematics-row">
+                        <div>
+                            <span class="kinematics-row__tag">BASE 03</span>
+                            <strong>v² = v₀² + 2<span class="formula-dot">‧</span>a<span class="formula-dot">‧</span>x</strong>
+                        </div>
+                        <p class="kinematics-row__formula">0 = V<sub>y</sub>² − 2<span class="formula-dot">‧</span>g<span class="formula-dot">‧</span>(Y<sub>最高</sub> − H)</p>
+                        <p>最高點令 v<sub>y</sub> = 0，解得結果卡 06：Y<sub>最高</sub> = H + V<sub>y</sub>²/(2‧g)。</p>
+                    </div>
+                </section>
+
+                <p class="teaching-note"><strong>快速示範：</strong>按下「示範組合」可切換到一組高處發射的明顯彈道。</p>
             </div>
 
             <footer class="modal__footer">
@@ -212,20 +274,21 @@
     <div class="modal" id="modal-formula" aria-hidden="true">
         <section class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formula-title">
             <header class="modal__header">
-                <h2 id="formula-title">斜面拋體運動｜Projectile on an Incline</h2>
+                <h2 id="formula-title">地表拋體運動｜Projectile Motion to Ground</h2>
                 <button class="modal__close" type="button" data-close-modal aria-label="關閉公式說明">×</button>
             </header>
 
             <div class="modal__body">
-                <p>本頁採用理想化模型：忽略空氣阻力、重力加速度固定為 9.8 m/s²，且斜面通過發射點 P。</p>
+                <p>本頁採用理想化模型：忽略空氣阻力，重力加速度固定為 9.8 m/s²，並固定以 y = 0 表示水平地表。</p>
 
-                <p>右側控制面板的「即時計算公式」會隨滑桿同步更新，方便直接比較參數與結果。</p>
+                <p>右側參數控制區的「解算結果」會隨滑桿同步更新，方便直接比較參數與結果。</p>
 
                 <ul class="principle-list">
-                    <li><strong>角度單位：</strong>畫面中的 α、θ、β 都以「度」表示。</li>
-                    <li><strong>有效交會：</strong>相對斜面角 β = α − θ；β 大於 0 時，才會在正時間再次落到斜面上。</li>
-                    <li><strong>距離關係：</strong>水平距離 X、升降高度 Y 與發射點到落點的斜面直線距離 PT 形成直角三角形。</li>
-                    <li><strong>海拔觀念：</strong>發射點海拔 H 會把整個斜面上下平移，但不改變相對斜面運動。</li>
+                    <li><strong>座標約定：</strong>x 軸沿水平方向，y = 0 是地表；正 y 值可等效理解為海拔或相對地表的垂直距離。</li>
+                    <li><strong>速度分量：</strong>水平初速度為 V₀‧cos α，垂直初速度為 V₀‧sin α，角度 α 一律以度表示。</li>
+                    <li><strong>落地條件：</strong>令 y(t) = H + V₀‧sin α‧t − 4.9‧t² = 0，取非負時間根作為落地時間。</li>
+                    <li><strong>位移觀念：</strong>X 表示從發射點到落點的水平位移X；H 與軌跡上的 Y 值表示垂直位移（海拔），最高值以最高點垂直位移Y（海拔）表示。</li>
+                    <li><strong>解算流程：</strong>參數只即時更新公式；按下「解算」才繪製軌跡與 T 點。座標視野由使用者縮放或拖曳控制，不會因調整參數而自動改變。</li>
                 </ul>
 
                 <p class="teaching-note"><strong>教學限制：</strong>這是課堂幾何與運動學示範，不包含空氣阻力、風、彈體旋轉、地球曲率或真實砲彈外彈道。</p>

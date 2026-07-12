@@ -102,9 +102,74 @@ body.projectile-page {
 }
 
 .projectile-layout {
+    position: relative;
     display: grid;
     min-height: 0;
     grid-template-columns: minmax(0, 1.58fr) minmax(360px, 0.92fr);
+    transition: grid-template-columns 280ms ease;
+}
+
+.projectile-layout.is-control-collapsed {
+    grid-template-columns: minmax(0, 1fr) 0;
+}
+
+.control-panel-toggle,
+.control-panel-fullscreen {
+    z-index: 8;
+    display: grid;
+    width: 32px;
+    height: 64px;
+    padding: 0;
+    border: 1px solid rgba(57, 214, 245, 0.42);
+    border-radius: 6px 0 0 6px;
+    align-self: center;
+    justify-self: start;
+    grid-column: 2;
+    grid-row: 1;
+    place-items: center;
+    color: var(--cyan);
+    background: rgba(6, 16, 30, 0.94);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.24);
+    font-family: var(--font-mono);
+    font-size: 1.45rem;
+    cursor: pointer;
+    transform: translateX(-100%);
+}
+
+.control-panel-fullscreen {
+    transform: translate(-100%, calc(-100% - 8px));
+}
+
+.control-panel-icon {
+    display: inline-grid;
+    width: 1em;
+    height: 1em;
+    place-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 1em;
+    font-weight: 400;
+    line-height: 1;
+}
+
+.control-panel-toggle:hover,
+.control-panel-toggle:focus-visible,
+.control-panel-fullscreen:hover,
+.control-panel-fullscreen:focus-visible {
+    border-color: var(--lime);
+    color: var(--lime);
+    outline: none;
+}
+
+.projectile-layout.is-control-collapsed .control-panel-toggle,
+.projectile-layout.is-control-collapsed .control-panel-fullscreen {
+    justify-self: end;
+    grid-column: 1;
+    border-radius: 6px 0 0 6px;
+    transform: none;
+}
+
+.projectile-layout.is-control-collapsed .control-panel-fullscreen {
+    transform: translateY(calc(-100% - 8px));
 }
 
 .stage {
@@ -113,6 +178,8 @@ body.projectile-page {
     min-height: 0;
     overflow: hidden;
     border-right: 1px solid var(--line);
+    grid-column: 1;
+    grid-row: 1;
     background:
         radial-gradient(circle at 40% 38%, rgba(38, 85, 128, 0.24), transparent 34rem),
         linear-gradient(145deg, rgba(9, 24, 41, 0.96), rgba(6, 16, 30, 0.98));
@@ -122,6 +189,13 @@ body.projectile-page {
     display: block;
     width: 100%;
     height: 100%;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+#trajectory-canvas.is-panning {
+    cursor: grabbing;
 }
 
 .stage-guide {
@@ -159,6 +233,42 @@ body.projectile-page {
     right: 1rem;
     display: flex;
     gap: 0.5rem;
+}
+
+.stage-zoom {
+    position: absolute;
+    z-index: 3;
+    top: 8rem;
+    right: 1rem;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.stage-zoom button {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    background: rgba(6, 16, 30, 0.82);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#btn-default-scale {
+    font-size: 0.62rem;
+    font-weight: 800;
+}
+
+.stage-zoom button:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(57, 214, 245, 0.1);
 }
 
 .trajectory-chip {
@@ -239,9 +349,20 @@ body.projectile-page {
     overflow-y: auto;
     flex-direction: column;
     gap: 1rem;
+    grid-column: 2;
+    grid-row: 1;
     background: rgba(9, 24, 41, 0.94);
     scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
     scrollbar-width: thin;
+    transition: opacity 180ms ease, padding 280ms ease, transform 280ms ease, visibility 280ms;
+}
+
+.projectile-layout.is-control-collapsed .control-panel {
+    visibility: hidden;
+    padding-inline: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(100%);
 }
 
 .panel-heading {
@@ -265,6 +386,157 @@ body.projectile-page {
     letter-spacing: 0.1em;
 }
 
+@media (min-width: 981px) {
+    .projectile-layout.is-control-fullscreen .control-panel-toggle {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .projectile-layout.is-control-fullscreen .control-panel-fullscreen {
+        position: absolute;
+        z-index: 14;
+        top: calc(50% - 68px);
+        right: 0;
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    .projectile-layout.is-control-fullscreen .control-panel {
+        position: absolute;
+        z-index: 12;
+        inset: 0;
+        width: 100%;
+        padding: clamp(1.5rem, 2.5vw, 2.6rem);
+        gap: 1.35rem;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        background: rgba(9, 24, 41, 0.75);
+        box-shadow: -24px 0 52px rgba(0, 0, 0, 0.3);
+        transform: none;
+    }
+
+    .projectile-layout.is-control-fullscreen .panel-heading h1 {
+        font-size: clamp(2.2rem, 3vw, 3rem);
+    }
+
+    .projectile-layout.is-control-fullscreen .eyebrow,
+    .projectile-layout.is-control-fullscreen .panel-step {
+        font-size: 0.78rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .parameter-panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .control-card {
+        min-height: 104px;
+        padding: 1.1rem;
+        align-content: center;
+    }
+
+    .projectile-layout.is-control-fullscreen .control-card__label,
+    .projectile-layout.is-control-fullscreen .control-card__value {
+        font-size: 1rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .control-card input {
+        min-height: 26px;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-panel__header h2 {
+        font-size: 1.35rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-panel__header > span {
+        font-size: 0.72rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card,
+    .projectile-layout.is-control-fullscreen .solve-card {
+        min-height: 138px;
+        padding: 1rem;
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--base {
+        grid-column: 1 / span 2;
+        grid-row: 1;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--cyan {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--lime {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--blue {
+        grid-column: 3;
+        grid-row: 2;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--violet {
+        grid-column: 4;
+        grid-row: 2;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--amber {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--peak {
+        grid-column: 2;
+        grid-row: 3;
+    }
+
+    .projectile-layout.is-control-fullscreen .solve-card {
+        grid-column: 3;
+        grid-row: 3;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card__number,
+    .projectile-layout.is-control-fullscreen .solve-card small {
+        font-size: 0.72rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card h3 {
+        font-size: 1rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-equation,
+    .projectile-layout.is-control-fullscreen .formula-substitution {
+        font-size: 0.82rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .solve-card strong {
+        font-size: 1.55rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .panel-actions {
+        width: min(100%, 560px);
+        margin-left: auto;
+    }
+
+    .projectile-layout.is-control-fullscreen .panel-actions .button {
+        min-height: 50px;
+        font-size: 0.92rem;
+    }
+}
+
 .parameter-panel {
     display: grid;
     gap: 0.65rem;
@@ -279,10 +551,6 @@ body.projectile-page {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem;
     background: rgba(255, 255, 255, 0.045);
-}
-
-.control-card--violet {
-    border-left-color: #a78bfa;
 }
 
 .control-card--amber {
@@ -300,34 +568,11 @@ body.projectile-page {
     font-size: 0.78rem;
 }
 
-.angle-value-group {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.45rem;
-}
-
-.relative-angle-pill {
-    padding: 0.18rem 0.42rem;
-    border: 1px solid rgba(185, 236, 70, 0.36);
-    border-radius: 999px;
-    color: var(--lime);
-    background: rgba(185, 236, 70, 0.075);
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
 .control-card input {
     width: 100%;
     grid-column: 1 / -1;
     accent-color: var(--cyan);
     cursor: pointer;
-}
-
-.control-card--violet input {
-    accent-color: #a78bfa;
 }
 
 .control-card--amber input {
@@ -337,7 +582,7 @@ body.projectile-page {
 .formula-panel {
     padding: 1rem;
     border: 1px solid var(--line);
-    border-radius: 9px;
+    border-radius: 8px;
     background: rgba(0, 0, 0, 0.18);
 }
 
@@ -591,14 +836,42 @@ body.projectile-page {
     --formula-bg: rgba(98, 230, 166, 0.1);
 }
 
-.formula-card--pink {
-    --formula-accent: var(--magenta);
-    --formula-bg: rgba(240, 91, 181, 0.1);
-}
-
 .formula-card--orange {
     --formula-accent: #ff9f43;
     --formula-bg: rgba(255, 159, 67, 0.11);
+}
+
+.formula-card--base {
+    --formula-accent: #f472b6;
+    --formula-bg: rgba(244, 114, 182, 0.1);
+    min-height: 112px;
+    grid-column: span 2;
+}
+
+.base-formula-list {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.base-formula-list .formula-equation {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 2.4rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid rgba(244, 114, 182, 0.2);
+    border-radius: 5px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 12, 24, 0.28);
+    white-space: nowrap;
+}
+
+.formula-card--peak {
+    grid-column: 2;
+    grid-row: 4;
 }
 
 .formula-card__number {
@@ -611,6 +884,66 @@ body.projectile-page {
     font-size: 0.58rem;
     font-weight: 800;
     letter-spacing: 0.16em;
+}
+
+.solve-card {
+    position: relative;
+    display: grid;
+    min-height: 104px;
+    padding: 0.68rem 0.72rem;
+    overflow: hidden;
+    border: 1px solid rgba(57, 214, 245, 0.58);
+    border-left: 4px solid var(--cyan);
+    border-radius: 9px;
+    place-items: center;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto 1fr;
+    gap: 0.25rem 0.65rem;
+    color: var(--ink-950);
+    background: linear-gradient(135deg, var(--cyan), var(--lime));
+    box-shadow: 0 0 18px rgba(57, 214, 245, 0.16);
+    cursor: pointer;
+    grid-column: 2;
+    grid-row: 5;
+}
+
+.solve-card .formula-card__number {
+    align-self: start;
+    justify-self: start;
+    color: rgba(6, 16, 30, 0.7);
+}
+
+.solve-card__icon {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 1.4rem;
+}
+
+.solve-card strong {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    font-size: 1.2rem;
+}
+
+.solve-card small {
+    grid-column: 3;
+    grid-row: 1 / -1;
+    align-self: center;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+}
+
+.solve-card:hover {
+    background: linear-gradient(135deg, #78e7fb, #d5ff75);
+    box-shadow: 0 0 24px rgba(57, 214, 245, 0.28);
+}
+
+.solve-card:disabled {
+    cursor: progress;
+    filter: saturate(0.65);
+    opacity: 0.75;
 }
 
 .formula-card h3 {
@@ -642,9 +975,102 @@ body.projectile-page {
     font-size: 0.63rem;
 }
 
-.formula-substitution.is-invalid {
-    color: #ff9aa5;
-    font-weight: 700;
+.formula-fraction {
+    display: inline-grid;
+    margin: 0 0.12em;
+    vertical-align: middle;
+    grid-template-rows: auto auto;
+    line-height: 1.1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.formula-fraction > span:first-child {
+    padding: 0 0.2em 0.08em;
+    border-bottom: 1px solid currentColor;
+}
+
+.formula-fraction > span:last-child {
+    padding-top: 0.08em;
+}
+
+.formula-result {
+    color: var(--text);
+    font-weight: 800;
+}
+
+.formula-dot {
+    position: relative;
+    top: -0.02em;
+    display: inline-flex;
+    width: 0.86em;
+    height: 1em;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    color: var(--formula-accent, var(--cyan));
+    font-family: var(--font-mono);
+    line-height: 1;
+    vertical-align: -0.08em;
+}
+
+.kinematics-variants {
+    margin: 1.2rem 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.kinematics-variants__heading {
+    padding: 1rem 0 0.45rem;
+}
+
+.kinematics-variants__heading h3 {
+    margin: 0.2rem 0 0;
+    color: var(--text);
+    font-size: 1rem;
+    letter-spacing: 0;
+}
+
+.kinematics-variants__intro {
+    margin: 0 0 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.kinematics-row {
+    display: grid;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--line-soft);
+    align-items: start;
+    grid-template-columns: minmax(120px, 0.65fr) minmax(190px, 1fr) minmax(0, 1.4fr);
+    gap: 1rem;
+}
+
+.kinematics-row > div strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+}
+
+.kinematics-row__tag {
+    color: var(--lime);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.kinematics-row p {
+    margin: 0;
+    line-height: 1.65;
+}
+
+.kinematics-row__formula {
+    color: #e5edf6;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
 }
 
 .guide-step-list {
@@ -729,14 +1155,35 @@ body.projectile-page {
         grid-template-rows: minmax(460px, 56vh) auto;
     }
 
+    .projectile-layout.is-control-collapsed {
+        grid-template-columns: 1fr;
+    }
+
+    .control-panel-toggle {
+        display: none;
+    }
+
+    .control-panel-fullscreen {
+        display: none;
+    }
+
     .stage {
         border-right: 0;
         border-bottom: 1px solid var(--line);
+        grid-column: 1;
+        grid-row: 1;
     }
 
     .control-panel {
+        visibility: visible;
         min-height: 640px;
+        padding: 1.35rem;
         overflow: visible;
+        grid-column: 1;
+        grid-row: 2;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
     }
 
 }
@@ -771,9 +1218,9 @@ body.projectile-page {
     }
 
     .stage-tools {
-        top: auto;
+        top: 4rem;
         right: 1rem;
-        bottom: 1rem;
+        bottom: auto;
     }
 
     .stage-tools .button {
@@ -786,10 +1233,7 @@ body.projectile-page {
     }
 
     .stage-observation {
-        top: 4rem;
-        right: 1rem;
-        width: auto;
-        padding: 0.62rem 0.7rem;
+        display: none;
     }
 
     .stage-observation h2 {
@@ -815,13 +1259,30 @@ body.projectile-page {
         grid-template-columns: 1fr;
     }
 
-    .angle-value-group {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 0.25rem;
+    .formula-card--base,
+    .formula-card--peak,
+    .solve-card {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .base-formula-list {
+        grid-template-columns: 1fr;
+    }
+
+    .stage-zoom {
+        top: 4rem;
+        right: auto;
+        left: 1rem;
+        display: flex;
     }
 
     .guide-step-list li:last-child:nth-child(odd) {
         grid-column: auto;
+    }
+
+    .kinematics-row {
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
     }
 }

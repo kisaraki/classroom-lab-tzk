@@ -7,35 +7,59 @@
     const controls = {
         v0: document.getElementById("input-v0"),
         alpha: document.getElementById("input-alpha"),
-        theta: document.getElementById("input-theta"),
         height: document.getElementById("input-height"),
     };
 
     const outputs = {
         v0: document.getElementById("v0-value"),
         alpha: document.getElementById("alpha-value"),
-        alphaRelative: document.getElementById("alpha-relative-value"),
-        theta: document.getElementById("theta-value"),
         height: document.getElementById("height-value"),
         stageStatus: document.getElementById("stage-status"),
-        formulaRelativeAngle: document.getElementById("formula-relative-angle"),
+        formulaHorizontalVelocity: document.getElementById("formula-horizontal-velocity"),
+        formulaVerticalVelocity: document.getElementById("formula-vertical-velocity"),
         formulaTime: document.getElementById("formula-time"),
         formulaHorizontal: document.getElementById("formula-horizontal"),
-        formulaVertical: document.getElementById("formula-vertical"),
-        formulaDistance: document.getElementById("formula-distance"),
-        formulaAltitude: document.getElementById("formula-altitude"),
         formulaPeakTime: document.getElementById("formula-peak-time"),
         formulaPeakAltitude: document.getElementById("formula-peak-altitude"),
     };
 
     const canvas = document.getElementById("trajectory-canvas");
     const ctx = canvas.getContext("2d");
+    const solveButton = document.getElementById("btn-solve");
+    const solveState = document.getElementById("solve-state");
+    const zoomInButton = document.getElementById("btn-zoom-in");
+    const zoomOutButton = document.getElementById("btn-zoom-out");
+    const defaultScaleButton = document.getElementById("btn-default-scale");
+    const fitViewButton = document.getElementById("btn-fit-view");
+    const projectileLayout = document.querySelector(".projectile-layout");
+    const stage = document.querySelector(".stage");
+    const controlPanelToggle = document.getElementById("btn-toggle-control-panel");
+    const controlPanelToggleIcon = document.getElementById("control-panel-toggle-icon");
+    const controlPanelFullscreen = document.getElementById("btn-fullscreen-control-panel");
+    const controlPanelFullscreenIcon = document.getElementById("control-panel-fullscreen-icon");
     const state = {
         v0: Number(controls.v0.value),
         alpha: Number(controls.alpha.value),
-        theta: Number(controls.theta.value),
         height: Number(controls.height.value),
     };
+    const view = {
+        centerX: 0,
+        centerY: 0,
+        scale: 1,
+        defaultScale: null,
+        initialized: false,
+        userAdjusted: false,
+    };
+    const pan = {
+        active: false,
+        pointerId: null,
+        lastX: 0,
+        lastY: 0,
+    };
+    let solvedCalculation = null;
+    let animationProgress = 0;
+    let animationFrame = null;
+    let hasSolvedOnce = false;
 
     function degToRad(deg) {
         return (deg * Math.PI) / 180;
@@ -60,127 +84,130 @@
         return `${formatNumber(value, digits)}°`;
     }
 
-    function angleTerm(value) {
-        return value < 0 ? `(${formatAngle(value, 0)})` : formatAngle(value, 0);
+    function formulaFraction(numerator, denominator) {
+        return `<span class="formula-fraction"><span>${numerator}</span><span>${denominator}</span></span>`;
+    }
+
+    function formulaResult(value) {
+        return `<strong class="formula-result">${value}</strong>`;
+    }
+
+    function formulaDot() {
+        return '<span class="formula-dot">‧</span>';
+    }
+
+    function setFormulaOutput(element, html, accessibleText) {
+        element.innerHTML = html;
+        element.setAttribute("aria-label", accessibleText);
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
     }
 
     function calculateTrajectory() {
         const alphaRad = degToRad(state.alpha);
-        const thetaRad = degToRad(state.theta);
-        const relativeAngle = state.alpha - state.theta;
-        const denominator = g * Math.cos(thetaRad);
-        const time = (2 * state.v0 * Math.sin(alphaRad - thetaRad)) / denominator;
-        const isVerticalSlope = Math.abs(Math.cos(thetaRad)) < 0.0001;
-        const isValid = !isVerticalSlope && Number.isFinite(time) && time > 0.0001;
-
-        const apexTime = Math.max(0, (state.v0 * Math.sin(alphaRad)) / g);
-        const fallbackTime = Math.max(3, apexTime * 2, state.v0 / g);
-        const drawTime = isValid ? time : Math.min(18, fallbackTime);
+        const horizontalVelocity = state.v0 * Math.cos(alphaRad);
+        const verticalVelocity = state.v0 * Math.sin(alphaRad);
+        const discriminant = verticalVelocity * verticalVelocity + 2 * g * state.height;
+        const time = (verticalVelocity + Math.sqrt(discriminant)) / g;
+        const horizontalDistance = horizontalVelocity * time;
+        const verticalDisplacement = state.height === 0 ? 0 : -state.height;
+        const apexTime = Math.max(0, verticalVelocity / g);
+        const apexAltitude = state.height + (verticalVelocity * verticalVelocity) / (2 * g);
         const samples = [];
 
         for (let i = 0; i <= 150; i += 1) {
-            const t = (drawTime * i) / 150;
-            samples.push(pointAtTime(t, alphaRad));
+            const t = (time * i) / 150;
+            samples.push(i === 150
+                ? { x: horizontalDistance, y: 0 }
+                : pointAtTime(t, horizontalVelocity, verticalVelocity));
         }
-
-        let x = 0;
-        let y = 0;
-        let distance = 0;
-        let targetAltitude = state.height;
-
-        if (isValid) {
-            x = state.v0 * Math.cos(alphaRad) * time;
-            y = x * Math.tan(thetaRad);
-            distance = Math.hypot(x, y);
-            targetAltitude = state.height + y;
-        }
-
-        const apexPoint = pointAtTime(apexTime, alphaRad);
 
         return {
+            v0: state.v0,
+            alpha: state.alpha,
+            height: state.height,
             alphaRad,
-            thetaRad,
-            relativeAngle,
+            horizontalVelocity,
+            verticalVelocity,
             time,
-            isVerticalSlope,
-            isValid,
-            x,
-            y,
-            distance,
-            targetAltitude,
+            horizontalDistance,
+            verticalDisplacement,
+            landingAltitude: 0,
             apexTime,
-            apexAltitude: apexPoint.y,
+            apexAltitude,
             samples,
         };
     }
 
-    function pointAtTime(time, alphaRad) {
+    function pointAtTime(time, horizontalVelocity, verticalVelocity) {
         return {
-            x: state.v0 * Math.cos(alphaRad) * time,
-            y: state.height + state.v0 * Math.sin(alphaRad) * time - 0.5 * g * time * time,
+            x: horizontalVelocity * time,
+            y: state.height + verticalVelocity * time - 0.5 * g * time * time,
         };
     }
 
     function updateValues(calc) {
         outputs.v0.textContent = `${state.v0} m/s`;
         outputs.alpha.textContent = `${state.alpha}°`;
-        outputs.alphaRelative.textContent = `相對斜面 ${formatAngle(calc.relativeAngle)}`;
-        outputs.theta.textContent = `${state.theta}°`;
         outputs.height.textContent = `${state.height} m`;
-
-        if (calc.isValid) {
-            outputs.stageStatus.textContent = "可與斜面交會";
-            outputs.stageStatus.style.color = "var(--lime)";
-        } else {
-            outputs.stageStatus.textContent = "未與斜面交會";
-            outputs.stageStatus.style.color = "var(--danger)";
-        }
 
         updateFormulaCards(calc);
     }
 
     function updateFormulaCards(calc) {
-        const beta = formatAngle(calc.relativeAngle);
-        const invalidMessage = "目前沒有正時間交會，後續落點公式暫無有效結果。";
+        const angle = formatAngle(state.alpha, 0);
+        const horizontalVelocity = formatNumber(calc.horizontalVelocity, 4);
+        const verticalVelocity = formatNumber(calc.verticalVelocity, 4);
+        const flightTime = formatNumber(calc.time, 4);
 
-        outputs.formulaRelativeAngle.textContent = `β = ${formatAngle(state.alpha, 0)} − ${angleTerm(state.theta)} = ${beta}`;
-        outputs.formulaTime.textContent = calc.isValid
-            ? `t = 2 × ${state.v0} × sin(${beta}) ÷ [9.8 × cos(${formatAngle(state.theta, 0)})] = ${formatMetric(calc.time, "秒")}`
-            : calc.isVerticalSlope
-                ? `θ = ${formatAngle(state.theta, 0)} 時斜面為垂直線，國中斜面模型暫不計算交會時間`
-            : `t = 2 × ${state.v0} × sin(${beta}) ÷ [9.8 × cos(${formatAngle(state.theta, 0)})] = ${formatMetric(calc.time, "秒")}，所以無效`;
-        outputs.formulaHorizontal.textContent = calc.isValid
-            ? `X = ${state.v0} × cos(${formatAngle(state.alpha, 0)}) × ${formatNumber(calc.time, 2)} = ${formatMetric(calc.x, "m")}`
-            : invalidMessage;
-        outputs.formulaVertical.textContent = calc.isValid
-            ? `Y = ${formatNumber(calc.x, 2)} × tan(${formatAngle(state.theta, 0)}) = ${formatMetric(calc.y, "m")}`
-            : invalidMessage;
-        outputs.formulaDistance.textContent = calc.isValid
-            ? `PT = √(${formatNumber(calc.x, 2)}² + ${formatNumber(calc.y, 2)}²) = ${formatMetric(calc.distance, "m")}`
-            : invalidMessage;
-        outputs.formulaAltitude.textContent = calc.isValid
-            ? `落點海拔 = ${state.height} + ${formatNumber(calc.y, 2)} = ${formatMetric(calc.targetAltitude, "m")}`
-            : invalidMessage;
-        outputs.formulaPeakTime.textContent = `t最高 = ${state.v0} × sin(${formatAngle(state.alpha, 0)}) ÷ 9.8 = ${formatMetric(calc.apexTime, "秒")}`;
-        outputs.formulaPeakAltitude.textContent = `最高點海拔 = ${state.height} + ${state.v0} × sin(${formatAngle(state.alpha, 0)}) × ${formatNumber(calc.apexTime, 2)} − 4.9 × ${formatNumber(calc.apexTime, 2)}² = ${formatMetric(calc.apexAltitude, "m")}`;
+        const horizontalVelocityResult = formatMetric(calc.horizontalVelocity, "m/s");
+        const verticalVelocityResult = formatMetric(calc.verticalVelocity, "m/s");
+        const timeResult = formatMetric(calc.time, "秒");
+        const horizontalResult = formatMetric(calc.horizontalDistance, "m");
+        const peakTimeResult = formatMetric(calc.apexTime, "秒");
+        const peakAltitudeResult = formatMetric(calc.apexAltitude, "m");
+        const dot = formulaDot();
 
-        [
+        setFormulaOutput(
+            outputs.formulaHorizontalVelocity,
+            `V<sub>x</sub> = ${state.v0}${dot}cos ${angle} = ${formulaResult(horizontalVelocityResult)}`,
+            `Vx = ${state.v0} ‧ cos ${angle} = ${horizontalVelocityResult}`
+        );
+        setFormulaOutput(
+            outputs.formulaVerticalVelocity,
+            `V<sub>y</sub> = ${state.v0}${dot}sin ${angle} = ${formulaResult(verticalVelocityResult)}`,
+            `Vy = ${state.v0} ‧ sin ${angle} = ${verticalVelocityResult}`
+        );
+        setFormulaOutput(
             outputs.formulaTime,
+            `t = ${formulaFraction(`${verticalVelocity} + √(${verticalVelocity}² + 2${dot}9.8${dot}${state.height})`, "9.8")} = ${formulaResult(timeResult)}`,
+            `t = (${verticalVelocity} + √(${verticalVelocity}² + 2 ‧ 9.8 ‧ ${state.height})) / 9.8 = ${timeResult}`
+        );
+        setFormulaOutput(
+            outputs.formulaPeakTime,
+            `t<sub>最高</sub> = ${formulaFraction(verticalVelocity, "9.8")} = ${formulaResult(peakTimeResult)}`,
+            `t最高 = ${verticalVelocity} / 9.8 = ${peakTimeResult}`
+        );
+        setFormulaOutput(
             outputs.formulaHorizontal,
-            outputs.formulaVertical,
-            outputs.formulaDistance,
-            outputs.formulaAltitude,
-        ].forEach((formula) => {
-            formula.classList.toggle("is-invalid", !calc.isValid);
-        });
+            `X = ${horizontalVelocity}${dot}${flightTime} = ${formulaResult(horizontalResult)}`,
+            `X = ${horizontalVelocity} ‧ ${flightTime} = ${horizontalResult}`
+        );
+        setFormulaOutput(
+            outputs.formulaPeakAltitude,
+            `最高點垂直位移Y（海拔） = ${state.height} + ${formulaFraction(`${verticalVelocity}²`, `2${dot}9.8`)} = ${formulaResult(peakAltitudeResult)}`,
+            `最高點垂直位移Y（海拔） = ${state.height} + ${verticalVelocity}² / (2 ‧ 9.8) = ${peakAltitudeResult}`
+        );
     }
 
     function computeBounds(calc) {
         const xs = calc.samples.map((point) => point.x);
         const ys = calc.samples.map((point) => point.y);
 
-        xs.push(0, calc.isValid ? calc.x : Math.max(40, state.v0));
-        ys.push(0, state.height, calc.isValid ? calc.targetAltitude : state.height, calc.apexAltitude);
+        xs.push(0, calc.horizontalDistance);
+        ys.push(0, calc.height, calc.apexAltitude);
 
         let minX = Math.min(...xs);
         let maxX = Math.max(...xs);
@@ -207,48 +234,67 @@
         return { minX, maxX, minY, maxY };
     }
 
-    function getResultStripLayout(width, height) {
-        const columns = width >= 900 ? 6 : (width >= 520 ? 3 : 2);
-        const stripHeight = columns === 6
-            ? Math.min(86, Math.max(76, height * 0.13))
-            : columns === 3
-                ? Math.min(118, Math.max(104, height * 0.18))
-                : Math.min(156, Math.max(136, height * 0.28));
+    function getPlotArea(width, height) {
+        const left = width < 480 ? 48 : 70;
+        const right = Math.max(left + 10, width - 34);
+        const top = 46;
+        const bottom = Math.max(top + 10, height - 34);
 
         return {
-            columns,
-            margin: 12,
-            stripHeight,
+            left,
+            right,
+            top,
+            bottom,
+            width: Math.max(10, right - left),
+            height: Math.max(10, bottom - top),
         };
     }
 
-    function createProjector(bounds, width, height) {
-        const resultStripLayout = getResultStripLayout(Math.max(260, width - 96), height);
-        const resultStripPadding = resultStripLayout.stripHeight + resultStripLayout.margin * 2 + 16;
-        const padding = {
-            top: 46,
-            right: 34,
-            bottom: resultStripPadding,
-            left: 70,
-        };
-
-        const plotWidth = Math.max(10, width - padding.left - padding.right);
-        const plotHeight = Math.max(10, height - padding.top - padding.bottom);
-        const rangeX = bounds.maxX - bounds.minX;
-        const rangeY = bounds.maxY - bounds.minY;
+    function createProjector(width, height) {
+        const plot = getPlotArea(width, height);
+        const centerCanvasX = plot.left + plot.width / 2;
+        const centerCanvasY = plot.top + plot.height / 2;
 
         return {
-            padding,
+            plot,
             toCanvas(x, y) {
                 return {
-                    x: padding.left + ((x - bounds.minX) / rangeX) * plotWidth,
-                    y: padding.top + (1 - (y - bounds.minY) / rangeY) * plotHeight,
+                    x: centerCanvasX + (x - view.centerX) * view.scale,
+                    y: centerCanvasY - (y - view.centerY) * view.scale,
                 };
             },
-            fromCanvasX(px) {
-                return bounds.minX + ((px - padding.left) / plotWidth) * rangeX;
+            fromCanvas(px, py) {
+                return {
+                    x: view.centerX + (px - centerCanvasX) / view.scale,
+                    y: view.centerY - (py - centerCanvasY) / view.scale,
+                };
+            },
+            bounds: {
+                minX: view.centerX - plot.width / (2 * view.scale),
+                maxX: view.centerX + plot.width / (2 * view.scale),
+                minY: view.centerY - plot.height / (2 * view.scale),
+                maxY: view.centerY + plot.height / (2 * view.scale),
             },
         };
+    }
+
+    function fitViewToCalculation(calc, width, height, userAdjusted = true) {
+        const bounds = computeBounds(calc);
+        const plot = getPlotArea(width, height);
+        const rangeX = Math.max(20, bounds.maxX - bounds.minX);
+        const groundGap = clamp(plot.height * 0.055, 18, 38);
+        const groundCanvasY = plot.bottom - groundGap;
+        const availableHeightAboveGround = Math.max(10, groundCanvasY - plot.top);
+        const maximumAltitude = Math.max(20, bounds.maxY);
+        const horizontalScale = plot.width / rangeX;
+        const verticalScale = availableHeightAboveGround / maximumAltitude;
+        const centerCanvasY = plot.top + plot.height / 2;
+
+        view.centerX = (bounds.minX + bounds.maxX) / 2;
+        view.scale = clamp(Math.min(horizontalScale, verticalScale), 0.01, 100);
+        view.centerY = (groundCanvasY - centerCanvasY) / view.scale;
+        view.initialized = true;
+        view.userAdjusted = userAdjusted;
     }
 
     function resizeCanvas() {
@@ -257,43 +303,47 @@
         canvas.width = Math.max(1, Math.round(rect.width * dpr));
         canvas.height = Math.max(1, Math.round(rect.height * dpr));
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        if (!view.initialized || !view.userAdjusted) {
+            fitViewToCalculation(solvedCalculation || calculateTrajectory(), rect.width, rect.height, false);
+            view.defaultScale = view.scale;
+        }
         render();
     }
 
     function render() {
-        const calc = calculateTrajectory();
-        updateValues(calc);
+        const pendingCalculation = calculateTrajectory();
+        updateValues(pendingCalculation);
 
         const rect = canvas.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) {
             return;
         }
 
-        drawScene(calc, rect.width, rect.height);
+        drawScene(pendingCalculation, rect.width, rect.height);
     }
 
-    function drawScene(calc, width, height) {
+    function drawScene(pendingCalculation, width, height) {
         ctx.clearRect(0, 0, width, height);
         drawBackground(width, height);
 
-        const bounds = computeBounds(calc);
-        const projector = createProjector(bounds, width, height);
+        const projector = createProjector(width, height);
 
-        drawGrid(bounds, projector, width, height);
-        drawLaunchReferenceLine(projector, width);
-        drawSlope(calc, bounds, projector);
-        drawTrajectory(calc, projector);
-        drawSlopeDistanceGuide(calc, projector);
-        drawLaunchVector(calc, projector);
-        drawPoint(projector.toCanvas(0, state.height), "P", "#ffc75a", -18, -12);
+        drawGrid(projector.bounds, projector);
+        drawGround(projector);
+        drawLaunchReferenceLine(projector);
+        drawAltitudeGuide(projector);
 
-        if (calc.isValid) {
-            drawPoint(projector.toCanvas(calc.x, calc.targetAltitude), "T", "#62e6a6", 12, -12);
-        } else {
-            drawWarning(width);
+        if (solvedCalculation) {
+            drawTrajectory(solvedCalculation, projector, animationProgress);
+            if (animationProgress >= 1) {
+                drawPoint(projector.toCanvas(solvedCalculation.horizontalDistance, 0), "T", "#62e6a6", 12, -30);
+            }
         }
 
-        drawResultStrip(calc, width, height, projector);
+        drawVelocityVectors(pendingCalculation, projector);
+        drawPoint(projector.toCanvas(0, state.height), "P1", "#ffc75a", -24, -12);
+
     }
 
     function drawBackground(width, height) {
@@ -323,8 +373,12 @@
         return value - Math.floor(value);
     }
 
-    function drawGrid(bounds, projector, width, height) {
+    function drawGrid(bounds, projector) {
+        const { plot } = projector;
         ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.left, plot.top, plot.width, plot.height);
+        ctx.clip();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.055)";
         ctx.lineWidth = 1;
 
@@ -334,53 +388,128 @@
         for (let x = Math.ceil(bounds.minX / xStep) * xStep; x <= bounds.maxX; x += xStep) {
             const point = projector.toCanvas(x, 0);
             ctx.beginPath();
-            ctx.moveTo(point.x, 0);
-            ctx.lineTo(point.x, height);
+            ctx.moveTo(point.x, plot.top);
+            ctx.lineTo(point.x, plot.bottom);
             ctx.stroke();
         }
 
         for (let y = Math.ceil(bounds.minY / yStep) * yStep; y <= bounds.maxY; y += yStep) {
             const point = projector.toCanvas(0, y);
             ctx.beginPath();
-            ctx.moveTo(0, point.y);
-            ctx.lineTo(width, point.y);
+            ctx.moveTo(plot.left, point.y);
+            ctx.lineTo(plot.right, point.y);
             ctx.stroke();
         }
 
         const origin = projector.toCanvas(0, 0);
         ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
         ctx.beginPath();
-        ctx.moveTo(origin.x, 0);
-        ctx.lineTo(origin.x, height);
-        ctx.moveTo(0, origin.y);
-        ctx.lineTo(width, origin.y);
+        ctx.moveTo(origin.x, plot.top);
+        ctx.lineTo(origin.x, plot.bottom);
+        ctx.moveTo(plot.left, origin.y);
+        ctx.lineTo(plot.right, origin.y);
         ctx.stroke();
+        ctx.restore();
 
-        ctx.fillStyle = "rgba(191, 204, 218, 0.72)";
-        ctx.font = "12px Microsoft JhengHei, sans-serif";
-        ctx.fillText("海平面 y = 0", Math.min(origin.x + 8, width - 96), Math.max(origin.y - 8, 18));
+        ctx.save();
+        ctx.fillStyle = "rgba(196, 215, 231, 0.72)";
+        ctx.font = "600 10px Cascadia Code, Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        for (let x = Math.ceil(bounds.minX / xStep) * xStep; x <= bounds.maxX; x += xStep) {
+            const point = projector.toCanvas(x, 0);
+            if (point.x >= plot.left + 16 && point.x <= plot.right - 16) {
+                ctx.fillText(formatTick(x), point.x, plot.bottom + 5);
+            }
+        }
+
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let y = Math.ceil(bounds.minY / yStep) * yStep; y <= bounds.maxY; y += yStep) {
+            const point = projector.toCanvas(0, y);
+            if (point.y >= plot.top + 8 && point.y <= plot.bottom - 8) {
+                ctx.fillText(formatTick(y), plot.left - 7, point.y);
+            }
+        }
         ctx.restore();
     }
 
-    function drawLaunchReferenceLine(projector, width) {
+    function formatTick(value) {
+        const absolute = Math.abs(value);
+        const digits = absolute > 0 && absolute < 1 ? 2 : (absolute < 10 ? 1 : 0);
+        return Number(value.toFixed(digits)).toLocaleString("zh-TW");
+    }
+
+    function drawGround(projector) {
+        const { plot } = projector;
+        const origin = projector.toCanvas(0, 0);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.left, plot.top, plot.width, plot.height);
+        ctx.clip();
+        const groundGradient = ctx.createLinearGradient(0, origin.y, 0, plot.bottom);
+        groundGradient.addColorStop(0, "rgba(185, 236, 70, 0.13)");
+        groundGradient.addColorStop(1, "rgba(13, 32, 53, 0.82)");
+        ctx.fillStyle = groundGradient;
+        ctx.fillRect(plot.left, Math.max(plot.top, origin.y), plot.width, Math.max(0, plot.bottom - Math.max(plot.top, origin.y)));
+
+        ctx.strokeStyle = "#b9ec46";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "rgba(185, 236, 70, 0.42)";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(plot.left, origin.y);
+        ctx.lineTo(plot.right, origin.y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.restore();
+
+        if (origin.y >= plot.top && origin.y <= plot.bottom) {
+            drawCanvasLabel("地表 y = 0", Math.min(Math.max(origin.x + 40, plot.left + 8), plot.right - 105), origin.y - 10, "#b9ec46");
+            drawCanvasLabel("水平位移X", plot.right - 112, origin.y + 28, "#39d6f5");
+        }
+
+        ctx.save();
+        ctx.translate(plot.left - 28, plot.top + plot.height * 0.62);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = "#ffc75a";
+        ctx.font = "700 12px Microsoft JhengHei, sans-serif";
+        ctx.fillText("y 海拔／垂直距離", 0, 0);
+        ctx.restore();
+    }
+
+    function drawLaunchReferenceLine(projector) {
+        if (state.height <= 0) {
+            return;
+        }
+
+        const { plot } = projector;
         const launchPoint = projector.toCanvas(0, state.height);
 
         ctx.save();
+        ctx.beginPath();
+        ctx.rect(plot.left, plot.top, plot.width, plot.height);
+        ctx.clip();
         ctx.strokeStyle = "rgba(255, 255, 255, 0.78)";
         ctx.lineWidth = 1;
         ctx.setLineDash([6, 6]);
         ctx.shadowColor = "rgba(255, 255, 255, 0.55)";
         ctx.shadowBlur = 6;
         ctx.beginPath();
-        ctx.moveTo(0, launchPoint.y);
-        ctx.lineTo(width, launchPoint.y);
+        ctx.moveTo(plot.left, launchPoint.y);
+        ctx.lineTo(plot.right, launchPoint.y);
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.shadowBlur = 0;
 
-        const labelX = Math.min(Math.max(launchPoint.x + 12, 12), width - 150);
-        drawCanvasLabel("P 點水平參考線", labelX, launchPoint.y - 8, "rgba(255, 255, 255, 0.92)");
         ctx.restore();
+
+        if (launchPoint.y >= plot.top && launchPoint.y <= plot.bottom) {
+            const labelX = Math.min(Math.max(launchPoint.x + 12, plot.left + 8), plot.right - 150);
+            drawCanvasLabel("發射點高度H（Y軸）", labelX, launchPoint.y - 8, "rgba(255, 255, 255, 0.92)");
+        }
     }
 
     function niceStep(range) {
@@ -403,125 +532,22 @@
         return 10 * magnitude;
     }
 
-    function drawSlope(calc, bounds, projector) {
-        if (calc.isVerticalSlope) {
-            const a = projector.toCanvas(0, bounds.minY);
-            const b = projector.toCanvas(0, bounds.maxY);
-            const mid = projector.toCanvas(0, (bounds.minY + bounds.maxY) / 2);
-
-            ctx.save();
-            ctx.strokeStyle = "#a78bfa";
-            ctx.lineWidth = 3;
-            ctx.shadowColor = "rgba(167, 139, 250, 0.35)";
-            ctx.shadowBlur = 16;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            drawCanvasLabel("垂直斜面 L", mid.x + 10, mid.y - 8, "#a78bfa");
-            ctx.restore();
-            return;
-        }
-
-        const segment = getSlopeSegmentWithinBounds(calc, bounds);
-        if (!segment) {
-            return;
-        }
-
-        const a = projector.toCanvas(segment.start.x, segment.start.y);
-        const b = projector.toCanvas(segment.end.x, segment.end.y);
-        const mid = projector.toCanvas(
-            (segment.start.x + segment.end.x) / 2,
-            (segment.start.y + segment.end.y) / 2
-        );
+    function drawTrajectory(calc, projector, progress) {
+        const cappedProgress = clamp(progress, 0, 1);
+        const finalIndex = cappedProgress * (calc.samples.length - 1);
+        const completeIndex = Math.floor(finalIndex);
 
         ctx.save();
-        ctx.strokeStyle = "#a78bfa";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "rgba(167, 139, 250, 0.35)";
-        ctx.shadowBlur = 16;
         ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        drawCanvasLabel("斜面 L", mid.x + 10, mid.y - 8, "#a78bfa");
-        ctx.restore();
-    }
-
-    function getSlopeSegmentWithinBounds(calc, bounds) {
-        const slope = Math.tan(calc.thetaRad);
-        const candidates = [];
-
-        addSlopeCandidate(bounds.minX, state.height + bounds.minX * slope);
-        addSlopeCandidate(bounds.maxX, state.height + bounds.maxX * slope);
-
-        if (Math.abs(slope) > 0.0001) {
-            addSlopeCandidate((bounds.minY - state.height) / slope, bounds.minY);
-            addSlopeCandidate((bounds.maxY - state.height) / slope, bounds.maxY);
-        }
-
-        if (candidates.length < 2) {
-            return null;
-        }
-
-        let bestPair = [candidates[0], candidates[1]];
-        let bestDistance = -Infinity;
-        for (let i = 0; i < candidates.length; i += 1) {
-            for (let j = i + 1; j < candidates.length; j += 1) {
-                const distance = Math.hypot(candidates[i].x - candidates[j].x, candidates[i].y - candidates[j].y);
-                if (distance > bestDistance) {
-                    bestDistance = distance;
-                    bestPair = [candidates[i], candidates[j]];
-                }
-            }
-        }
-
-        return {
-            start: bestPair[0],
-            end: bestPair[1],
-        };
-
-        function addSlopeCandidate(x, y) {
-            if (!Number.isFinite(x) || !Number.isFinite(y)) {
-                return;
-            }
-
-            const tolerance = 0.0001;
-            const isInside =
-                x >= bounds.minX - tolerance &&
-                x <= bounds.maxX + tolerance &&
-                y >= bounds.minY - tolerance &&
-                y <= bounds.maxY + tolerance;
-
-            if (!isInside) {
-                return;
-            }
-
-            const isDuplicate = candidates.some((point) => {
-                return Math.abs(point.x - x) < tolerance && Math.abs(point.y - y) < tolerance;
-            });
-
-            if (!isDuplicate) {
-                candidates.push({ x, y });
-            }
-        }
-    }
-
-    function drawTrajectory(calc, projector) {
-        ctx.save();
-        ctx.strokeStyle = calc.isValid ? "#39d6f5" : "#ff6b7a";
+        ctx.rect(projector.plot.left, projector.plot.top, projector.plot.width, projector.plot.height);
+        ctx.clip();
+        ctx.strokeStyle = "#39d6f5";
         ctx.lineWidth = 3;
-        ctx.shadowColor = calc.isValid ? "rgba(57, 214, 245, 0.45)" : "rgba(255, 107, 122, 0.35)";
+        ctx.shadowColor = "rgba(57, 214, 245, 0.45)";
         ctx.shadowBlur = 18;
 
-        if (!calc.isValid) {
-            ctx.setLineDash([8, 7]);
-        }
-
         ctx.beginPath();
-        calc.samples.forEach((point, index) => {
+        calc.samples.slice(0, completeIndex + 1).forEach((point, index) => {
             const canvasPoint = projector.toCanvas(point.x, point.y);
             if (index === 0) {
                 ctx.moveTo(canvasPoint.x, canvasPoint.y);
@@ -529,18 +555,28 @@
                 ctx.lineTo(canvasPoint.x, canvasPoint.y);
             }
         });
+
+        if (completeIndex < calc.samples.length - 1) {
+            const start = calc.samples[completeIndex];
+            const end = calc.samples[completeIndex + 1];
+            const remainder = finalIndex - completeIndex;
+            const canvasPoint = projector.toCanvas(
+                start.x + (end.x - start.x) * remainder,
+                start.y + (end.y - start.y) * remainder
+            );
+            ctx.lineTo(canvasPoint.x, canvasPoint.y);
+        }
         ctx.stroke();
         ctx.restore();
     }
 
-    function drawSlopeDistanceGuide(calc, projector) {
-        if (!calc.isValid) {
+    function drawAltitudeGuide(projector) {
+        if (state.height <= 0) {
             return;
         }
 
-        const start = projector.toCanvas(0, state.height);
-        const end = projector.toCanvas(calc.x, calc.targetAltitude);
-        const mid = projector.toCanvas(calc.x / 2, state.height + calc.y / 2);
+        const ground = projector.toCanvas(0, 0);
+        const launch = projector.toCanvas(0, state.height);
 
         ctx.save();
         ctx.strokeStyle = "#ffc75a";
@@ -549,41 +585,68 @@
         ctx.shadowColor = "rgba(255, 199, 90, 0.28)";
         ctx.shadowBlur = 12;
         ctx.beginPath();
+        ctx.moveTo(ground.x, ground.y);
+        ctx.lineTo(launch.x, launch.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        drawCanvasLabel(`H ${formatMetric(state.height, "m", 0)}`, launch.x + 12, (launch.y + ground.y) / 2, "#ffc75a");
+        ctx.restore();
+    }
+
+    function drawVelocityVectors(calc, projector) {
+        const start = projector.toCanvas(0, state.height);
+        const minimumSpeed = Number(controls.v0.min);
+        const maximumSpeed = Number(controls.v0.max);
+        const speedRatio = clamp((calc.v0 - minimumSpeed) / (maximumSpeed - minimumSpeed), 0, 1);
+        const minimumVectorLength = 34;
+        const maximumVectorLength = clamp(projector.plot.width * 0.2, 96, 164);
+        const vectorLength = minimumVectorLength
+            + (maximumVectorLength - minimumVectorLength) * Math.sqrt(speedRatio);
+        const velocityScale = vectorLength / Math.max(calc.v0, 1);
+        const dx = calc.horizontalVelocity * velocityScale;
+        const dy = -calc.verticalVelocity * velocityScale;
+        const horizontalEnd = { x: start.x + dx, y: start.y };
+        const verticalEnd = { x: start.x, y: start.y + dy };
+        const velocityEnd = { x: start.x + dx, y: start.y + dy };
+
+        drawArrow(start, horizontalEnd, "#5db7ff", [6, 5]);
+        drawArrow(start, verticalEnd, "#a78bfa", [6, 5]);
+        drawArrow(start, velocityEnd, "#ffc75a");
+
+        if (Math.abs(dx) > 4) {
+            drawCanvasLabel("Vx", horizontalEnd.x + 7, horizontalEnd.y + 18, "#5db7ff");
+        }
+        if (Math.abs(dy) > 4) {
+            drawCanvasLabel("Vy", verticalEnd.x + 8, verticalEnd.y - 4, "#a78bfa");
+        }
+        drawCanvasLabel("V₀", velocityEnd.x + 8, velocityEnd.y - 8, "#ffc75a");
+    }
+
+    function drawArrow(start, end, color, dash = []) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        if (Math.hypot(dx, dy) < 2) {
+            return;
+        }
+
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.shadowBlur = 0;
-        drawCanvasLabel(`PT ${formatMetric(calc.distance, "m")}`, mid.x + 10, mid.y - 12, "#ffc75a");
-        ctx.restore();
-    }
-
-    function drawLaunchVector(calc, projector) {
-        const start = projector.toCanvas(0, state.height);
-        const bounds = computeBounds(calc);
-        const scale = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 0.13;
-        const end = projector.toCanvas(
-            Math.cos(calc.alphaRad) * scale,
-            state.height + Math.sin(calc.alphaRad) * scale
-        );
-
-        ctx.save();
-        ctx.strokeStyle = "#ffc75a";
-        ctx.fillStyle = "#ffc75a";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
-
-        const angle = Math.atan2(end.y - start.y, end.x - start.x);
         ctx.beginPath();
         ctx.moveTo(end.x, end.y);
-        ctx.lineTo(end.x - 10 * Math.cos(angle - Math.PI / 6), end.y - 10 * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(end.x - 10 * Math.cos(angle + Math.PI / 6), end.y - 10 * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(end.x - 9 * Math.cos(angle - Math.PI / 6), end.y - 9 * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(end.x - 9 * Math.cos(angle + Math.PI / 6), end.y - 9 * Math.sin(angle + Math.PI / 6));
         ctx.closePath();
         ctx.fill();
-        drawCanvasLabel("V₀", end.x + 8, end.y - 8, "#ffc75a");
         ctx.restore();
     }
 
@@ -597,97 +660,6 @@
         ctx.fill();
         ctx.shadowBlur = 0;
         drawCanvasLabel(label, point.x + labelDx, point.y + labelDy, color);
-        ctx.restore();
-    }
-
-    function drawResultStrip(calc, width, height, projector) {
-        const origin = projector.toCanvas(0, 0);
-        const axisGap = 8;
-        const margin = 12;
-        const minimumPanelWidth = Math.min(180, width - margin * 2);
-        const x = Math.min(
-            Math.max(margin, origin.x + axisGap),
-            Math.max(margin, width - minimumPanelWidth - margin)
-        );
-        const panelWidth = width - x - margin;
-        const layout = getResultStripLayout(panelWidth, height);
-        const availableBelowXAxis = height - (origin.y + axisGap) - margin;
-        const stripHeight = Math.min(layout.stripHeight, Math.max(40, availableBelowXAxis));
-        const y = origin.y + axisGap;
-        const columns = layout.columns;
-        const panelRadius = 10;
-        const statusText = calc.isValid ? "軌跡有效" : "角度無效";
-        const statusColor = calc.isValid ? "#62e6a6" : "#ff6b7a";
-        const valueColors = ["#62e6a6", "#39d6f5", "#ffc75a", "#f05bb5", "#7db7ff", "#ffffff"];
-        const resultItems = calc.isValid
-            ? [
-                ["飛行時間", formatMetric(calc.time, "s")],
-                ["水平距離 X", formatMetric(calc.x, "m")],
-                ["升降高度 Y", formatMetric(calc.y, "m")],
-                ["PT 斜面直線距離", formatMetric(calc.distance, "m")],
-                ["落點海拔", formatMetric(calc.targetAltitude, "m")],
-                ["最高點海拔", formatMetric(calc.apexAltitude, "m")],
-            ]
-            : [
-                ["飛行時間", "無正時間交會"],
-                ["水平距離 X", "-- m"],
-                ["升降高度 Y", "-- m"],
-                ["PT 斜面直線距離", "-- m"],
-                ["落點海拔", "-- m"],
-                ["最高點海拔", formatMetric(calc.apexAltitude, "m")],
-            ];
-
-        ctx.save();
-        roundedRect(ctx, x, y, panelWidth, stripHeight, panelRadius);
-        const panelGradient = ctx.createLinearGradient(x, y, x + panelWidth, y + stripHeight);
-        panelGradient.addColorStop(0, "rgba(5, 19, 34, 0.94)");
-        panelGradient.addColorStop(0.55, "rgba(9, 31, 51, 0.9)");
-        panelGradient.addColorStop(1, "rgba(6, 16, 30, 0.92)");
-        ctx.fillStyle = panelGradient;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(57, 214, 245, 0.4)";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-
-        ctx.fillStyle = "#39d6f5";
-        ctx.shadowColor = "rgba(57, 214, 245, 0.45)";
-        ctx.shadowBlur = 12;
-        ctx.font = "800 14px Cascadia Code, Consolas, monospace";
-        ctx.fillText("解算結果 / 斜面交會", x + 16, y + 23);
-        ctx.shadowBlur = 0;
-
-        ctx.font = "800 11px Cascadia Code, Consolas, monospace";
-        const badgeTextWidth = ctx.measureText(statusText).width + 18;
-        const badgeX = x + panelWidth - badgeTextWidth - 14;
-        roundedRect(ctx, badgeX, y + 8, badgeTextWidth, 24, 999);
-        ctx.fillStyle = calc.isValid ? "rgba(98, 230, 166, 0.16)" : "rgba(255, 107, 122, 0.16)";
-        ctx.fill();
-        ctx.strokeStyle = statusColor;
-        ctx.stroke();
-        ctx.fillStyle = statusColor;
-        ctx.fillText(statusText, badgeX + 9, y + 24);
-
-        const gridTop = y + (columns === 6 ? 38 : 42);
-        const gridHeight = stripHeight - (columns === 6 ? 44 : 48);
-        const rows = Math.ceil(resultItems.length / columns);
-        const cellWidth = panelWidth / columns;
-        const cellHeight = gridHeight / rows;
-
-        resultItems.forEach(([label, value], index) => {
-            const col = index % columns;
-            const row = Math.floor(index / columns);
-            const cellX = x + col * cellWidth + 16;
-            const cellY = gridTop + row * cellHeight;
-
-            ctx.fillStyle = "#9fb1c4";
-            ctx.font = "700 11px Microsoft JhengHei, sans-serif";
-            ctx.fillText(label, cellX, cellY + 10);
-
-            ctx.fillStyle = calc.isValid || label === "最高點海拔" ? valueColors[index % valueColors.length] : "#7f8fa2";
-            ctx.font = "800 15px Cascadia Code, Consolas, monospace";
-            ctx.fillText(value, cellX, cellY + 31);
-        });
-
         ctx.restore();
     }
 
@@ -716,27 +688,178 @@
         context.closePath();
     }
 
-    function drawWarning(width) {
-        ctx.save();
-        const text = "目前 α − θ ≤ 0，拋體不會在正時間重新命中斜面";
-        ctx.font = "700 15px Microsoft JhengHei, sans-serif";
-        const textWidth = ctx.measureText(text).width;
-        const boxWidth = Math.min(width - 32, textWidth + 34);
-        roundedRect(ctx, 16, 22, boxWidth, 42, 7);
-        ctx.fillStyle = "rgba(255, 107, 122, 0.12)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255, 107, 122, 0.45)";
-        ctx.stroke();
-        ctx.fillStyle = "#ff9aa5";
-        ctx.fillText(text, 32, 49);
-        ctx.restore();
-    }
-
     function syncStateFromControls() {
         state.v0 = Number(controls.v0.value);
         state.alpha = Number(controls.alpha.value);
-        state.theta = Number(controls.theta.value);
         state.height = Number(controls.height.value);
+    }
+
+    function cancelSolveAnimation() {
+        if (animationFrame !== null) {
+            window.cancelAnimationFrame(animationFrame);
+            animationFrame = null;
+        }
+        solveButton.disabled = false;
+    }
+
+    function setSolveStatus(stageText, cardText) {
+        outputs.stageStatus.textContent = stageText;
+        solveState.textContent = cardText;
+    }
+
+    function invalidateSolution(message = "參數已變更，請重新解算") {
+        cancelSolveAnimation();
+        solvedCalculation = null;
+        animationProgress = 0;
+        setSolveStatus(message, "READY");
+    }
+
+    function startSolve() {
+        cancelSolveAnimation();
+        solvedCalculation = calculateTrajectory();
+        animationProgress = 0;
+
+        const rect = canvas.getBoundingClientRect();
+        if (!hasSolvedOnce && !view.userAdjusted) {
+            fitViewToCalculation(solvedCalculation, rect.width, rect.height, false);
+        }
+
+        solveButton.disabled = true;
+        setSolveStatus("軌跡解算中", "SOLVING");
+        const duration = 1450;
+        let startTime = null;
+
+        function animate(timestamp) {
+            if (startTime === null) {
+                startTime = timestamp;
+            }
+
+            const linearProgress = clamp((timestamp - startTime) / duration, 0, 1);
+            animationProgress = 1 - (1 - linearProgress) ** 3;
+            render();
+
+            if (linearProgress < 1) {
+                animationFrame = window.requestAnimationFrame(animate);
+                return;
+            }
+
+            animationProgress = 1;
+            animationFrame = null;
+            hasSolvedOnce = true;
+            solveButton.disabled = false;
+            setSolveStatus("落點位於地表 y = 0", "DONE");
+            render();
+        }
+
+        animationFrame = window.requestAnimationFrame(animate);
+    }
+
+    function zoomAtCanvasPoint(factor, canvasX, canvasY) {
+        const rect = canvas.getBoundingClientRect();
+        const beforeProjector = createProjector(rect.width, rect.height);
+        const anchorBefore = beforeProjector.fromCanvas(canvasX, canvasY);
+
+        view.scale = clamp(view.scale * factor, 0.01, 200);
+
+        const afterProjector = createProjector(rect.width, rect.height);
+        const anchorAfter = afterProjector.fromCanvas(canvasX, canvasY);
+        view.centerX += anchorBefore.x - anchorAfter.x;
+        view.centerY += anchorBefore.y - anchorAfter.y;
+        view.initialized = true;
+        view.userAdjusted = true;
+        render();
+    }
+
+    function zoomFromCenter(factor) {
+        const rect = canvas.getBoundingClientRect();
+        const plot = getPlotArea(rect.width, rect.height);
+        zoomAtCanvasPoint(factor, plot.left + plot.width / 2, plot.top + plot.height / 2);
+    }
+
+    function restoreDefaultScale() {
+        if (!Number.isFinite(view.defaultScale) || view.defaultScale <= 0) {
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const plot = getPlotArea(rect.width, rect.height);
+        zoomAtCanvasPoint(
+            view.defaultScale / view.scale,
+            plot.left + plot.width / 2,
+            plot.top + plot.height / 2
+        );
+    }
+
+    function setControlPanelCollapsed(collapsed) {
+        if (collapsed) {
+            setControlPanelFullscreen(false);
+        }
+        projectileLayout.classList.toggle("is-control-collapsed", collapsed);
+        controlPanelToggle.setAttribute("aria-expanded", String(!collapsed));
+        controlPanelToggleIcon.textContent = collapsed ? "‹" : "›";
+        const label = collapsed ? "向左展開右側參數控制區" : "向右收合右側參數控制區";
+        controlPanelToggle.setAttribute("aria-label", label);
+        controlPanelToggle.title = label;
+    }
+
+    function setControlPanelFullscreen(fullscreen) {
+        if (fullscreen) {
+            projectileLayout.classList.remove("is-control-collapsed");
+            controlPanelToggle.setAttribute("aria-expanded", "true");
+            controlPanelToggleIcon.textContent = "›";
+        }
+
+        projectileLayout.classList.toggle("is-control-fullscreen", fullscreen);
+        controlPanelFullscreen.setAttribute("aria-pressed", String(fullscreen));
+        controlPanelFullscreenIcon.textContent = fullscreen ? "›" : "‹";
+        const label = fullscreen ? "退出右側參數控制區全螢幕" : "向左全螢幕顯示右側參數控制區";
+        controlPanelFullscreen.setAttribute("aria-label", label);
+        controlPanelFullscreen.title = label;
+    }
+
+    function beginPan(event) {
+        if (event.button !== 0) {
+            return;
+        }
+
+        pan.active = true;
+        pan.pointerId = event.pointerId;
+        pan.lastX = event.clientX;
+        pan.lastY = event.clientY;
+        canvas.classList.add("is-panning");
+        canvas.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    }
+
+    function movePan(event) {
+        if (!pan.active || event.pointerId !== pan.pointerId) {
+            return;
+        }
+
+        const deltaX = event.clientX - pan.lastX;
+        const deltaY = event.clientY - pan.lastY;
+        pan.lastX = event.clientX;
+        pan.lastY = event.clientY;
+
+        view.centerX -= deltaX / view.scale;
+        view.centerY += deltaY / view.scale;
+        view.initialized = true;
+        view.userAdjusted = true;
+        render();
+        event.preventDefault();
+    }
+
+    function endPan(event) {
+        if (!pan.active || (event.pointerId !== undefined && event.pointerId !== pan.pointerId)) {
+            return;
+        }
+
+        if (pan.pointerId !== null && canvas.hasPointerCapture(pan.pointerId)) {
+            canvas.releasePointerCapture(pan.pointerId);
+        }
+        pan.active = false;
+        pan.pointerId = null;
+        canvas.classList.remove("is-panning");
     }
 
     function setControls(nextState) {
@@ -746,22 +869,60 @@
             }
         });
         syncStateFromControls();
+        invalidateSolution();
         render();
     }
 
     Object.values(controls).forEach((control) => {
         control.addEventListener("input", () => {
             syncStateFromControls();
+            invalidateSolution();
             render();
         });
     });
 
+    solveButton.addEventListener("click", startSolve);
+    controlPanelToggle.addEventListener("click", () => {
+        setControlPanelCollapsed(!projectileLayout.classList.contains("is-control-collapsed"));
+    });
+    controlPanelFullscreen.addEventListener("click", () => {
+        setControlPanelFullscreen(!projectileLayout.classList.contains("is-control-fullscreen"));
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && projectileLayout.classList.contains("is-control-fullscreen")) {
+            setControlPanelFullscreen(false);
+            controlPanelFullscreen.focus();
+        }
+    });
+
+    canvas.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const factor = Math.exp(-event.deltaY * 0.0012);
+        zoomAtCanvasPoint(factor, event.clientX - rect.left, event.clientY - rect.top);
+    }, { passive: false });
+    canvas.addEventListener("pointerdown", beginPan);
+    canvas.addEventListener("pointermove", movePan);
+    canvas.addEventListener("pointerup", endPan);
+    canvas.addEventListener("pointercancel", endPan);
+    canvas.addEventListener("lostpointercapture", endPan);
+
+    zoomInButton.addEventListener("click", () => zoomFromCenter(1.2));
+    zoomOutButton.addEventListener("click", () => zoomFromCenter(1 / 1.2));
+    defaultScaleButton.addEventListener("click", restoreDefaultScale);
+    fitViewButton.addEventListener("click", () => {
+        const rect = canvas.getBoundingClientRect();
+        fitViewToCalculation(solvedCalculation || calculateTrajectory(), rect.width, rect.height, true);
+        render();
+    });
+
     document.getElementById("btn-reset").addEventListener("click", () => {
-        setControls({ v0: 50, alpha: 45, theta: 0, height: 0 });
+        setControls({ v0: 50, alpha: 45, height: 0 });
     });
 
     document.getElementById("btn-demo").addEventListener("click", () => {
-        setControls({ v0: 86, alpha: 58, theta: 24, height: 320 });
+        setControls({ v0: 86, alpha: 58, height: 320 });
     });
 
     function openModal(id) {
@@ -802,6 +963,12 @@
 
     window.addEventListener("resize", resizeCanvas);
 
+    if (typeof ResizeObserver !== "undefined") {
+        const stageResizeObserver = new ResizeObserver(() => resizeCanvas());
+        stageResizeObserver.observe(stage);
+    }
+
     syncStateFromControls();
+    setSolveStatus("等待解算", "READY");
     resizeCanvas();
 })();
