@@ -283,7 +283,7 @@ body.projectile-page {
     bottom: 1rem;
     left: 1rem;
     display: grid;
-    width: min(420px, calc(100% - 2rem));
+    width: min(500px, calc(100% - 2rem));
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
     gap: 0.4rem;
@@ -360,9 +360,26 @@ body.projectile-page {
 }
 
 #btn-toggle-p-components[aria-pressed="true"] .stage-display-toggle__indicator {
-    border-color: #8fa1fc;
-    background: linear-gradient(135deg, #5db7ff 0 50%, #a78bfa 50% 100%);
-    box-shadow: 0 0 10px rgba(143, 161, 252, 0.56);
+    border-color: #a8c7ff;
+    background: linear-gradient(135deg, #5db7ff 0 50%, #f4f7ff 50% 100%);
+    box-shadow: 0 0 10px rgba(168, 199, 255, 0.56);
+}
+
+.stage-display-toggle--q[aria-pressed="true"] {
+    border-color: rgba(214, 92, 255, 0.48);
+    background: rgba(214, 92, 255, 0.11);
+}
+
+#btn-toggle-q-lines[aria-pressed="true"] .stage-display-toggle__indicator {
+    border-color: #ff304f;
+    background: linear-gradient(135deg, #d65cff 0 50%, #ff304f 50% 100%);
+    box-shadow: 0 0 10px rgba(214, 92, 255, 0.56);
+}
+
+#btn-toggle-q-components[aria-pressed="true"] .stage-display-toggle__indicator {
+    border-color: #f0b765;
+    background: linear-gradient(135deg, #ff8c42 0 50%, #7ee787 50% 100%);
+    box-shadow: 0 0 10px rgba(214, 92, 255, 0.5);
 }
 
 .stage-display-toggle sub {
@@ -382,6 +399,18 @@ body.projectile-page {
     font-size: 0.62rem;
     letter-spacing: 0.04em;
     pointer-events: none;
+}
+
+.trajectory-chip span {
+    display: block;
+}
+
+.trajectory-chip span + span {
+    margin-top: 0.2rem;
+}
+
+#q-stage-status {
+    color: #d65cff;
 }
 
 .trajectory-chip strong {
@@ -555,56 +584,25 @@ body.projectile-page {
     }
 
     .projectile-layout.is-control-fullscreen .formula-card-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.85rem;
     }
 
     .projectile-layout.is-control-fullscreen .formula-card,
     .projectile-layout.is-control-fullscreen .solve-card {
-        min-height: 138px;
+        min-height: 162px;
         padding: 1rem;
         grid-column: auto;
         grid-row: auto;
     }
 
     .projectile-layout.is-control-fullscreen .formula-card--base {
-        grid-column: 1 / span 2;
-        grid-row: 1;
+        grid-column: 1 / -1;
+        grid-row: auto;
     }
 
-    .projectile-layout.is-control-fullscreen .formula-card--cyan {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    .projectile-layout.is-control-fullscreen .formula-card--lime {
-        grid-column: 2;
-        grid-row: 2;
-    }
-
-    .projectile-layout.is-control-fullscreen .formula-card--blue {
-        grid-column: 3;
-        grid-row: 2;
-    }
-
-    .projectile-layout.is-control-fullscreen .formula-card--violet {
-        grid-column: 4;
-        grid-row: 2;
-    }
-
-    .projectile-layout.is-control-fullscreen .formula-card--amber {
-        grid-column: 1;
-        grid-row: 3;
-    }
-
-    .projectile-layout.is-control-fullscreen .formula-card--peak {
-        grid-column: 2;
-        grid-row: 3;
-    }
-
-    .projectile-layout.is-control-fullscreen .solve-card {
-        grid-column: 3;
-        grid-row: 3;
+    .projectile-layout.is-control-fullscreen .solve-card-pair {
+        grid-column: 1 / -1;
     }
 
     .projectile-layout.is-control-fullscreen .formula-card__number,
@@ -619,6 +617,41 @@ body.projectile-page {
     .projectile-layout.is-control-fullscreen .formula-equation,
     .projectile-layout.is-control-fullscreen .formula-substitution {
         font-size: 0.82rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--blue .formula-family .formula-equation,
+    .projectile-layout.is-control-fullscreen .formula-card--blue .formula-family .formula-substitution {
+        font-size: 0.72rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--base .formula-equation {
+        font-size: 1rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card:not(.formula-card--base) {
+        min-height: 190px;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card:not(.formula-card--base) > .formula-card__number {
+        font-size: 0.9rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card:not(.formula-card--base) > h3 {
+        font-size: 1.18rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-family__label {
+        font-size: 0.98rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-family .formula-equation,
+    .projectile-layout.is-control-fullscreen .formula-family .formula-substitution {
+        font-size: 1rem;
+    }
+
+    .projectile-layout.is-control-fullscreen .formula-card--blue .formula-family .formula-equation,
+    .projectile-layout.is-control-fullscreen .formula-card--blue .formula-family .formula-substitution {
+        font-size: 0.9rem;
     }
 
     .projectile-layout.is-control-fullscreen .solve-card strong {
@@ -641,8 +674,16 @@ body.projectile-page {
     gap: 0.65rem;
 }
 
+.parameter-pair {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
 .control-card {
     display: grid;
+    min-width: 0;
     padding: 0.9rem;
     border: 1px solid var(--line-soft);
     border-left: 3px solid var(--cyan);
@@ -652,19 +693,31 @@ body.projectile-page {
     background: rgba(255, 255, 255, 0.045);
 }
 
-.control-card--amber {
-    border-left-color: var(--amber);
+.control-card--p {
+    border-left-color: #ffc75a;
+}
+
+.control-card--q {
+    border-left-color: #d65cff;
+    background: rgba(214, 92, 255, 0.045);
+}
+
+.control-card--q .control-card__label,
+.control-card--q .control-card__value {
+    color: #e6b3ff;
 }
 
 .control-card__label {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.7rem;
+    line-height: 1.45;
 }
 
 .control-card__value {
     color: var(--text);
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
 }
 
 .control-card input {
@@ -674,8 +727,12 @@ body.projectile-page {
     cursor: pointer;
 }
 
-.control-card--amber input {
-    accent-color: var(--amber);
+.control-card--p input {
+    accent-color: #ffc75a;
+}
+
+.control-card--q input {
+    accent-color: #d65cff;
 }
 
 .formula-panel {
@@ -875,7 +932,7 @@ body.projectile-page {
 .formula-card-grid {
     display: grid;
     padding-top: 0.8rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.55rem;
 }
 
@@ -883,7 +940,7 @@ body.projectile-page {
     --formula-accent: var(--cyan);
     --formula-bg: rgba(57, 214, 245, 0.075);
     position: relative;
-    min-height: 104px;
+    min-height: 148px;
     padding: 0.68rem 0.72rem;
     overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--formula-accent) 36%, transparent);
@@ -892,6 +949,10 @@ body.projectile-page {
     background:
         linear-gradient(135deg, var(--formula-bg), rgba(255, 255, 255, 0.025)),
         rgba(255, 255, 255, 0.035);
+}
+
+.formula-card:not(.formula-card--base) {
+    min-height: 176px;
 }
 
 .formula-card::after {
@@ -944,7 +1005,7 @@ body.projectile-page {
     --formula-accent: #f472b6;
     --formula-bg: rgba(244, 114, 182, 0.1);
     min-height: 112px;
-    grid-column: span 2;
+    grid-column: 1 / -1;
 }
 
 .base-formula-list {
@@ -965,12 +1026,73 @@ body.projectile-page {
     align-items: center;
     justify-content: center;
     background: rgba(4, 12, 24, 0.28);
+    font-size: 0.82rem;
     white-space: nowrap;
 }
 
 .formula-card--peak {
-    grid-column: 2;
-    grid-row: 4;
+    grid-column: auto;
+    grid-row: auto;
+}
+
+.formula-family-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+
+.formula-family {
+    min-width: 0;
+}
+
+.formula-family + .formula-family {
+    padding-left: 0.7rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.formula-family__label {
+    display: block;
+    margin-bottom: 0.28rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+
+.formula-family--p .formula-family__label {
+    color: #ffc75a;
+}
+
+.formula-family--q .formula-family__label {
+    color: #d65cff;
+}
+
+.formula-family .formula-equation,
+.formula-family .formula-substitution {
+    overflow-wrap: anywhere;
+}
+
+.formula-family .formula-fraction {
+    max-width: 100%;
+    white-space: normal;
+}
+
+.formula-family .formula-fraction > span {
+    min-width: 0;
+}
+
+.formula-family .formula-equation {
+    font-size: 0.74rem;
+}
+
+.formula-family .formula-substitution {
+    font-size: 0.75rem;
+}
+
+.formula-card--blue .formula-family .formula-equation,
+.formula-card--blue .formula-family .formula-substitution {
+    font-size: 0.67rem;
 }
 
 .formula-card__number {
@@ -985,6 +1107,18 @@ body.projectile-page {
     letter-spacing: 0.16em;
 }
 
+.formula-card:not(.formula-card--base) > .formula-card__number {
+    font-size: 0.76rem;
+}
+
+.solve-card-pair {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    grid-column: 1 / -1;
+}
+
 .solve-card {
     position: relative;
     display: grid;
@@ -995,21 +1129,31 @@ body.projectile-page {
     border-left: 4px solid var(--cyan);
     border-radius: 9px;
     place-items: center;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto 1fr;
     gap: 0.25rem 0.65rem;
     color: var(--ink-950);
     background: linear-gradient(135deg, var(--cyan), var(--lime));
     box-shadow: 0 0 18px rgba(57, 214, 245, 0.16);
     cursor: pointer;
-    grid-column: 1;
-    grid-row: 5;
+}
+
+.solve-card--q {
+    border-color: rgba(255, 48, 79, 0.68);
+    border-left-color: #d65cff;
+    color: #ffffff;
+    background: linear-gradient(135deg, #d65cff, #ff304f);
+    box-shadow: 0 0 18px rgba(255, 48, 79, 0.18);
 }
 
 .solve-card .formula-card__number {
     align-self: start;
     justify-self: start;
     color: rgba(6, 16, 30, 0.7);
+}
+
+.solve-card.solve-card--q .formula-card__number {
+    color: rgba(255, 255, 255, 0.78);
 }
 
 .solve-card__icon {
@@ -1022,13 +1166,14 @@ body.projectile-page {
     grid-column: 2;
     grid-row: 2;
     justify-self: start;
-    font-size: 1.2rem;
+    font-size: 1.02rem;
 }
 
 .solve-card small {
-    grid-column: 3;
-    grid-row: 1 / -1;
-    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
     font-family: var(--font-mono);
     font-size: 0.58rem;
     letter-spacing: 0.1em;
@@ -1037,6 +1182,11 @@ body.projectile-page {
 .solve-card:hover {
     background: linear-gradient(135deg, #78e7fb, #d5ff75);
     box-shadow: 0 0 24px rgba(57, 214, 245, 0.28);
+}
+
+.solve-card--q:hover {
+    background: linear-gradient(135deg, #e27aff, #ff6379);
+    box-shadow: 0 0 24px rgba(255, 48, 79, 0.3);
 }
 
 .solve-card:disabled {
@@ -1052,6 +1202,10 @@ body.projectile-page {
     color: var(--text);
     font-size: 0.76rem;
     font-weight: 700;
+}
+
+.formula-card:not(.formula-card--base) > h3 {
+    font-size: 0.94rem;
 }
 
 .formula-equation,
@@ -1363,6 +1517,24 @@ body.projectile-page {
     .solve-card {
         grid-column: auto;
         grid-row: auto;
+    }
+
+    .solve-card-pair {
+        gap: 0.4rem;
+    }
+
+    .solve-card {
+        min-height: 96px;
+        padding: 0.55rem;
+        gap: 0.2rem 0.35rem;
+    }
+
+    .solve-card strong {
+        font-size: 0.86rem;
+    }
+
+    .solve-card__icon {
+        font-size: 1.05rem;
     }
 
     .base-formula-list {

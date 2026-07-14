@@ -3,50 +3,101 @@
 
     const g = 9.8;
     const tau = Math.PI * 2;
+    const familyOrder = ["p", "q"];
 
-    const controls = {
-        v0: document.getElementById("input-v0"),
-        alpha: document.getElementById("input-alpha"),
-        height: document.getElementById("input-height"),
+    const familyDefinitions = {
+        p: {
+            label: "P",
+            colors: {
+                point: "#ffc75a",
+                launch: "#ffc75a",
+                horizontal: "#5db7ff",
+                vertical: "#f4f7ff",
+                trajectory: "#39d6f5",
+                trajectoryGlow: "rgba(57, 214, 245, 0.45)",
+                landing: "#62e6a6",
+                vectorGlow: "rgba(255, 199, 90, 0.32)",
+            },
+        },
+        q: {
+            label: "Q",
+            colors: {
+                point: "#d65cff",
+                launch: "#d65cff",
+                horizontal: "#ff8c42",
+                vertical: "#7ee787",
+                trajectory: "#ff304f",
+                trajectoryGlow: "rgba(255, 48, 79, 0.45)",
+                landing: "#ff6379",
+                vectorGlow: "rgba(214, 92, 255, 0.32)",
+            },
+        },
     };
 
-    const outputs = {
-        v0: document.getElementById("v0-value"),
-        alpha: document.getElementById("alpha-value"),
-        height: document.getElementById("height-value"),
-        stageStatus: document.getElementById("stage-status"),
-        formulaHorizontalVelocity: document.getElementById("formula-horizontal-velocity"),
-        formulaVerticalVelocity: document.getElementById("formula-vertical-velocity"),
-        formulaTime: document.getElementById("formula-time"),
-        formulaHorizontal: document.getElementById("formula-horizontal"),
-        formulaPeakTime: document.getElementById("formula-peak-time"),
-        formulaPeakAltitude: document.getElementById("formula-peak-altitude"),
-    };
+    function createFamily(key, definition) {
+        const controls = {
+            v0: document.getElementById(`input-${key}-v0`),
+            alpha: document.getElementById(`input-${key}-alpha`),
+            height: document.getElementById(`input-${key}-height`),
+        };
+
+        return {
+            key,
+            label: definition.label,
+            colors: definition.colors,
+            controls,
+            outputs: {
+                v0: document.getElementById(`${key}-v0-value`),
+                alpha: document.getElementById(`${key}-alpha-value`),
+                height: document.getElementById(`${key}-height-value`),
+                stageStatus: document.getElementById(`${key}-stage-status`),
+                formulaHorizontalVelocity: document.getElementById(`formula-${key}-horizontal-velocity`),
+                formulaVerticalVelocity: document.getElementById(`formula-${key}-vertical-velocity`),
+                formulaTime: document.getElementById(`formula-${key}-time`),
+                formulaHorizontal: document.getElementById(`formula-${key}-horizontal`),
+                formulaPeakTime: document.getElementById(`formula-${key}-peak-time`),
+                formulaPeakAltitude: document.getElementById(`formula-${key}-peak-altitude`),
+            },
+            solveButton: document.getElementById(`btn-solve-${key}`),
+            solveState: document.getElementById(`${key}-solve-state`),
+            displayToggleButtons: {
+                all: document.getElementById(`btn-toggle-${key}-lines`),
+                components: document.getElementById(`btn-toggle-${key}-components`),
+            },
+            state: {
+                v0: Number(controls.v0.value),
+                alpha: Number(controls.alpha.value),
+                height: Number(controls.height.value),
+            },
+            display: {
+                launchVector: true,
+                horizontalVector: true,
+                verticalVector: true,
+                trajectory: true,
+            },
+            solvedCalculation: null,
+            animationProgress: 0,
+            animationFrame: null,
+        };
+    }
+
+    const families = Object.fromEntries(
+        familyOrder.map((key) => [key, createFamily(key, familyDefinitions[key])])
+    );
 
     const canvas = document.getElementById("trajectory-canvas");
     const ctx = canvas.getContext("2d");
-    const solveButton = document.getElementById("btn-solve");
-    const solveState = document.getElementById("solve-state");
     const zoomInButton = document.getElementById("btn-zoom-in");
     const zoomOutButton = document.getElementById("btn-zoom-out");
     const defaultScaleButton = document.getElementById("btn-default-scale");
     const fitViewButton = document.getElementById("btn-fit-view");
     const stageDisplayControls = document.querySelector(".stage-display-controls");
-    const displayToggleButtons = {
-        all: document.getElementById("btn-toggle-p-lines"),
-        components: document.getElementById("btn-toggle-p-components"),
-    };
     const projectileLayout = document.querySelector(".projectile-layout");
     const stage = document.querySelector(".stage");
     const controlPanelToggle = document.getElementById("btn-toggle-control-panel");
     const controlPanelToggleIcon = document.getElementById("control-panel-toggle-icon");
     const controlPanelFullscreen = document.getElementById("btn-fullscreen-control-panel");
     const controlPanelFullscreenIcon = document.getElementById("control-panel-fullscreen-icon");
-    const state = {
-        v0: Number(controls.v0.value),
-        alpha: Number(controls.alpha.value),
-        height: Number(controls.height.value),
-    };
     const view = {
         centerX: 0,
         centerY: 0,
@@ -61,16 +112,7 @@
         lastX: 0,
         lastY: 0,
     };
-    const displayState = {
-        launchVector: true,
-        horizontalVector: true,
-        verticalVector: true,
-        trajectory: true,
-    };
-    let solvedCalculation = null;
-    let animationProgress = 0;
-    let animationFrame = null;
-    let hasSolvedOnce = false;
+    let hasStartedSolve = false;
 
     function degToRad(deg) {
         return (deg * Math.PI) / 180;
@@ -116,26 +158,18 @@
         return Math.min(max, Math.max(min, value));
     }
 
-    function calculateTrajectory() {
+    function calculateTrajectory(family) {
+        const { state } = family;
         const alphaRad = degToRad(state.alpha);
         const horizontalVelocity = state.v0 * Math.cos(alphaRad);
         const verticalVelocity = state.v0 * Math.sin(alphaRad);
         const discriminant = verticalVelocity * verticalVelocity + 2 * g * state.height;
         const time = (verticalVelocity + Math.sqrt(discriminant)) / g;
         const horizontalDistance = horizontalVelocity * time;
-        const verticalDisplacement = state.height === 0 ? 0 : -state.height;
         const apexTime = Math.max(0, verticalVelocity / g);
         const apexAltitude = state.height + (verticalVelocity * verticalVelocity) / (2 * g);
-        const samples = [];
-
-        for (let i = 0; i <= 150; i += 1) {
-            const t = (time * i) / 150;
-            samples.push(i === 150
-                ? { x: horizontalDistance, y: 0 }
-                : pointAtTime(t, horizontalVelocity, verticalVelocity));
-        }
-
-        return {
+        const calculation = {
+            familyKey: family.key,
             v0: state.v0,
             alpha: state.alpha,
             height: state.height,
@@ -144,81 +178,109 @@
             verticalVelocity,
             time,
             horizontalDistance,
-            verticalDisplacement,
             landingAltitude: 0,
             apexTime,
             apexAltitude,
-            samples,
+            samples: [],
         };
+
+        for (let i = 0; i <= 150; i += 1) {
+            const sampleTime = (time * i) / 150;
+            calculation.samples.push(i === 150
+                ? { x: horizontalDistance, y: 0 }
+                : pointAtTime(sampleTime, calculation));
+        }
+
+        return calculation;
     }
 
-    function pointAtTime(time, horizontalVelocity, verticalVelocity) {
+    function pointAtTime(time, calculation) {
         return {
-            x: horizontalVelocity * time,
-            y: state.height + verticalVelocity * time - 0.5 * g * time * time,
+            x: calculation.horizontalVelocity * time,
+            y: calculation.height
+                + calculation.verticalVelocity * time
+                - 0.5 * g * time * time,
         };
     }
 
-    function updateValues(calc) {
+    function getPendingCalculations() {
+        return Object.fromEntries(
+            familyOrder.map((key) => [key, calculateTrajectory(families[key])])
+        );
+    }
+
+    function getViewCalculations(pendingCalculations = getPendingCalculations()) {
+        return familyOrder.map((key) => (
+            families[key].solvedCalculation || pendingCalculations[key]
+        ));
+    }
+
+    function updateValues(family, calculation) {
+        const { state, outputs } = family;
         outputs.v0.textContent = `${state.v0} m/s`;
         outputs.alpha.textContent = `${state.alpha}°`;
         outputs.height.textContent = `${state.height} m`;
-
-        updateFormulaCards(calc);
+        updateFormulaCards(family, calculation);
     }
 
-    function updateFormulaCards(calc) {
+    function updateFormulaCards(family, calculation) {
+        const { state, outputs, label } = family;
         const angle = formatAngle(state.alpha, 0);
-        const horizontalVelocity = formatNumber(calc.horizontalVelocity, 4);
-        const verticalVelocity = formatNumber(calc.verticalVelocity, 4);
-        const flightTime = formatNumber(calc.time, 4);
-
-        const horizontalVelocityResult = formatMetric(calc.horizontalVelocity, "m/s");
-        const verticalVelocityResult = formatMetric(calc.verticalVelocity, "m/s");
-        const timeResult = formatMetric(calc.time, "秒");
-        const horizontalResult = formatMetric(calc.horizontalDistance, "m");
-        const peakTimeResult = formatMetric(calc.apexTime, "秒");
-        const peakAltitudeResult = formatMetric(calc.apexAltitude, "m");
+        const horizontalVelocity = formatNumber(calculation.horizontalVelocity, 4);
+        const verticalVelocity = formatNumber(calculation.verticalVelocity, 4);
+        const flightTime = formatNumber(calculation.time, 4);
+        const horizontalVelocityResult = formatMetric(calculation.horizontalVelocity, "m/s");
+        const verticalVelocityResult = formatMetric(calculation.verticalVelocity, "m/s");
+        const timeResult = formatMetric(calculation.time, "秒");
+        const horizontalResult = formatMetric(calculation.horizontalDistance, "m");
+        const peakTimeResult = formatMetric(calculation.apexTime, "秒");
+        const peakAltitudeResult = formatMetric(calculation.apexAltitude, "m");
         const dot = formulaDot();
 
         setFormulaOutput(
             outputs.formulaHorizontalVelocity,
-            `V<sub>0,x</sub> = ${state.v0}${dot}cos ${angle} = ${formulaResult(horizontalVelocityResult)}`,
-            `V 0,x = ${state.v0} ‧ cos ${angle} = ${horizontalVelocityResult}`
+            `V<sub>${label},x</sub> = ${state.v0}${dot}cos ${angle} = ${formulaResult(horizontalVelocityResult)}`,
+            `${label}：V ${label},x = ${state.v0} ‧ cos ${angle} = ${horizontalVelocityResult}`
         );
         setFormulaOutput(
             outputs.formulaVerticalVelocity,
-            `V<sub>0,y</sub> = ${state.v0}${dot}sin ${angle} = ${formulaResult(verticalVelocityResult)}`,
-            `V 0,y = ${state.v0} ‧ sin ${angle} = ${verticalVelocityResult}`
+            `V<sub>${label},y</sub> = ${state.v0}${dot}sin ${angle} = ${formulaResult(verticalVelocityResult)}`,
+            `${label}：V ${label},y = ${state.v0} ‧ sin ${angle} = ${verticalVelocityResult}`
         );
         setFormulaOutput(
             outputs.formulaTime,
-            `t = ${formulaFraction(`${verticalVelocity} + √(${verticalVelocity}² + 2${dot}9.8${dot}${state.height})`, "9.8")} = ${formulaResult(timeResult)}`,
-            `t = (${verticalVelocity} + √(${verticalVelocity}² + 2 ‧ 9.8 ‧ ${state.height})) / 9.8 = ${timeResult}`
+            `t<sub>${label}</sub> = ${formulaFraction(`${verticalVelocity} + √(${verticalVelocity}² + 2${dot}9.8${dot}${state.height})`, "9.8")} = ${formulaResult(timeResult)}`,
+            `${label}：t = (${verticalVelocity} + √(${verticalVelocity}² + 2 ‧ 9.8 ‧ ${state.height})) / 9.8 = ${timeResult}`
         );
         setFormulaOutput(
             outputs.formulaPeakTime,
-            `t<sub>最高</sub> = ${formulaFraction(verticalVelocity, "9.8")} = ${formulaResult(peakTimeResult)}`,
-            `t最高 = ${verticalVelocity} / 9.8 = ${peakTimeResult}`
+            `t<sub>${label},最高</sub> = ${formulaFraction(verticalVelocity, "9.8")} = ${formulaResult(peakTimeResult)}`,
+            `${label}：t 最高 = ${verticalVelocity} / 9.8 = ${peakTimeResult}`
         );
         setFormulaOutput(
             outputs.formulaHorizontal,
-            `X = ${horizontalVelocity}${dot}${flightTime} = ${formulaResult(horizontalResult)}`,
-            `X = ${horizontalVelocity} ‧ ${flightTime} = ${horizontalResult}`
+            `X<sub>${label}</sub> = ${horizontalVelocity}${dot}${flightTime} = ${formulaResult(horizontalResult)}`,
+            `${label}：X = ${horizontalVelocity} ‧ ${flightTime} = ${horizontalResult}`
         );
         setFormulaOutput(
             outputs.formulaPeakAltitude,
-            `最高點垂直位移Y（海拔） = ${state.height} + ${formulaFraction(`${verticalVelocity}²`, `2${dot}9.8`)} = ${formulaResult(peakAltitudeResult)}`,
-            `最高點垂直位移Y（海拔） = ${state.height} + ${verticalVelocity}² / (2 ‧ 9.8) = ${peakAltitudeResult}`
+            `Y<sub>${label},最高</sub> = ${state.height} + ${formulaFraction(`${verticalVelocity}²`, `2${dot}9.8`)} = ${formulaResult(peakAltitudeResult)}`,
+            `${label}：Y 最高 = ${state.height} + ${verticalVelocity}² / (2 ‧ 9.8) = ${peakAltitudeResult}`
         );
     }
 
-    function computeBounds(calc) {
-        const xs = calc.samples.map((point) => point.x);
-        const ys = calc.samples.map((point) => point.y);
+    function computeBounds(calculations) {
+        const xs = [0];
+        const ys = [0];
 
-        xs.push(0, calc.horizontalDistance);
-        ys.push(0, calc.height, calc.apexAltitude);
+        calculations.forEach((calculation) => {
+            calculation.samples.forEach((point) => {
+                xs.push(point.x);
+                ys.push(point.y);
+            });
+            xs.push(calculation.horizontalDistance);
+            ys.push(calculation.height, calculation.apexAltitude);
+        });
 
         let minX = Math.min(...xs);
         let maxX = Math.max(...xs);
@@ -251,7 +313,7 @@
         const top = 46;
         const displayControlsHeight = stageDisplayControls
             ? stageDisplayControls.getBoundingClientRect().height
-            : 40;
+            : 80;
         const bottomInset = Math.max(34, Math.ceil(displayControlsHeight) + 28);
         const bottom = Math.max(top + 10, height - bottomInset);
 
@@ -293,8 +355,8 @@
         };
     }
 
-    function fitViewToCalculation(calc, width, height, userAdjusted = true) {
-        const bounds = computeBounds(calc);
+    function fitViewToCalculations(calculations, width, height, userAdjusted = true) {
+        const bounds = computeBounds(calculations);
         const plot = getPlotArea(width, height);
         const rangeX = Math.max(20, bounds.maxX - bounds.minX);
         const groundGap = clamp(plot.height * 0.055, 18, 38);
@@ -320,47 +382,66 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         if (!view.initialized || !view.userAdjusted) {
-            fitViewToCalculation(solvedCalculation || calculateTrajectory(), rect.width, rect.height, false);
+            fitViewToCalculations(getViewCalculations(), rect.width, rect.height, false);
             view.defaultScale = view.scale;
         }
         render();
     }
 
     function render() {
-        const pendingCalculation = calculateTrajectory();
-        updateValues(pendingCalculation);
+        const pendingCalculations = getPendingCalculations();
+        familyOrder.forEach((key) => updateValues(families[key], pendingCalculations[key]));
 
         const rect = canvas.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) {
             return;
         }
 
-        drawScene(pendingCalculation, rect.width, rect.height);
+        drawScene(pendingCalculations, rect.width, rect.height);
     }
 
-    function drawScene(pendingCalculation, width, height) {
+    function drawScene(pendingCalculations, width, height) {
         ctx.clearRect(0, 0, width, height);
         drawBackground(width, height);
 
         const projector = createProjector(width, height);
-
         drawGrid(projector.bounds, projector);
         drawGround(projector);
-        drawLaunchReferenceLine(projector);
-        drawAltitudeGuide(projector);
 
-        if (solvedCalculation) {
-            if (displayState.trajectory) {
-                drawTrajectory(solvedCalculation, projector, animationProgress);
+        familyOrder.forEach((key, index) => {
+            drawLaunchReferenceLine(families[key], projector, index);
+            drawAltitudeGuide(families[key], projector, index);
+        });
+
+        familyOrder.forEach((key) => {
+            const family = families[key];
+            if (!family.solvedCalculation) {
+                return;
             }
-            if (animationProgress >= 1) {
-                drawPoint(projector.toCanvas(solvedCalculation.horizontalDistance, 0), "T", "#62e6a6", 12, -30);
+            if (family.display.trajectory) {
+                drawTrajectory(
+                    family.solvedCalculation,
+                    projector,
+                    family.animationProgress,
+                    family.colors
+                );
             }
-        }
+            if (family.animationProgress >= 1) {
+                const landingPoint = projector.toCanvas(family.solvedCalculation.horizontalDistance, 0);
+                drawPoint(
+                    landingPoint,
+                    `T_${family.label}`,
+                    family.colors.landing,
+                    12,
+                    family.key === "p" ? -30 : 22
+                );
+            }
+        });
 
-        drawVelocityVectors(pendingCalculation, projector);
-        drawPoint(projector.toCanvas(0, state.height), "P", "#ffc75a", -18, -12);
-
+        familyOrder.forEach((key) => {
+            drawVelocityVectors(families[key], pendingCalculations[key], projector);
+        });
+        drawLaunchPoints(projector);
     }
 
     function drawBackground(width, height) {
@@ -469,7 +550,12 @@
         groundGradient.addColorStop(0, "rgba(185, 236, 70, 0.13)");
         groundGradient.addColorStop(1, "rgba(13, 32, 53, 0.82)");
         ctx.fillStyle = groundGradient;
-        ctx.fillRect(plot.left, Math.max(plot.top, origin.y), plot.width, Math.max(0, plot.bottom - Math.max(plot.top, origin.y)));
+        ctx.fillRect(
+            plot.left,
+            Math.max(plot.top, origin.y),
+            plot.width,
+            Math.max(0, plot.bottom - Math.max(plot.top, origin.y))
+        );
 
         ctx.strokeStyle = "#b9ec46";
         ctx.lineWidth = 3;
@@ -480,11 +566,15 @@
         ctx.lineTo(plot.right, origin.y);
         ctx.stroke();
         ctx.shadowBlur = 0;
-
         ctx.restore();
 
         if (origin.y >= plot.top && origin.y <= plot.bottom) {
-            drawCanvasLabel("地表 y = 0", Math.min(Math.max(origin.x + 40, plot.left + 8), plot.right - 105), origin.y - 10, "#b9ec46");
+            drawCanvasLabel(
+                "地表 y = 0",
+                Math.min(Math.max(origin.x + 40, plot.left + 8), plot.right - 105),
+                origin.y - 10,
+                "#b9ec46"
+            );
             drawCanvasLabel("水平位移X", plot.right - 112, origin.y + 28, "#39d6f5");
         }
 
@@ -497,35 +587,38 @@
         ctx.restore();
     }
 
-    function drawLaunchReferenceLine(projector) {
-        if (state.height <= 0) {
+    function drawLaunchReferenceLine(family, projector, index) {
+        if (family.state.height <= 0) {
             return;
         }
 
         const { plot } = projector;
-        const launchPoint = projector.toCanvas(0, state.height);
-
+        const launchPoint = projector.toCanvas(0, family.state.height);
         ctx.save();
         ctx.beginPath();
         ctx.rect(plot.left, plot.top, plot.width, plot.height);
         ctx.clip();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.78)";
+        ctx.strokeStyle = family.colors.point;
+        ctx.globalAlpha = 0.58;
         ctx.lineWidth = 1;
-        ctx.setLineDash([6, 6]);
-        ctx.shadowColor = "rgba(255, 255, 255, 0.55)";
+        ctx.setLineDash(index === 0 ? [6, 6] : [3, 5]);
+        ctx.shadowColor = family.colors.point;
         ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.moveTo(plot.left, launchPoint.y);
         ctx.lineTo(plot.right, launchPoint.y);
         ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.shadowBlur = 0;
-
         ctx.restore();
 
         if (launchPoint.y >= plot.top && launchPoint.y <= plot.bottom) {
-            const labelX = Math.min(Math.max(launchPoint.x + 12, plot.left + 8), plot.right - 150);
-            drawCanvasLabel("發射點高度H（Y軸）", labelX, launchPoint.y - 8, "rgba(255, 255, 255, 0.92)");
+            const labelX = Math.min(Math.max(launchPoint.x + 12, plot.left + 8), plot.right - 190);
+            const labelY = launchPoint.y + (index === 0 ? -8 : 20);
+            drawCanvasLabel(
+                `${family.label}：發射點高度H${family.label}（Y軸）`,
+                labelX,
+                labelY,
+                family.colors.point
+            );
         }
     }
 
@@ -537,34 +630,26 @@
         if (normalized < 1.5) {
             return magnitude;
         }
-
         if (normalized < 3.5) {
             return 2 * magnitude;
         }
-
         if (normalized < 7.5) {
             return 5 * magnitude;
         }
-
         return 10 * magnitude;
     }
 
-    function drawTrajectory(calc, projector, progress) {
+    function drawTrajectory(calculation, projector, progress, colors) {
         const cappedProgress = clamp(progress, 0, 1);
-        const finalIndex = cappedProgress * (calc.samples.length - 1);
+        const finalIndex = cappedProgress * (calculation.samples.length - 1);
         const completeIndex = Math.floor(finalIndex);
 
         ctx.save();
         ctx.beginPath();
         ctx.rect(projector.plot.left, projector.plot.top, projector.plot.width, projector.plot.height);
         ctx.clip();
-        ctx.strokeStyle = "#39d6f5";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "rgba(57, 214, 245, 0.45)";
-        ctx.shadowBlur = 18;
-
         ctx.beginPath();
-        calc.samples.slice(0, completeIndex + 1).forEach((point, index) => {
+        calculation.samples.slice(0, completeIndex + 1).forEach((point, index) => {
             const canvasPoint = projector.toCanvas(point.x, point.y);
             if (index === 0) {
                 ctx.moveTo(canvasPoint.x, canvasPoint.y);
@@ -573,9 +658,9 @@
             }
         });
 
-        if (completeIndex < calc.samples.length - 1) {
-            const start = calc.samples[completeIndex];
-            const end = calc.samples[completeIndex + 1];
+        if (completeIndex < calculation.samples.length - 1) {
+            const start = calculation.samples[completeIndex];
+            const end = calculation.samples[completeIndex + 1];
             const remainder = finalIndex - completeIndex;
             const canvasPoint = projector.toCanvas(
                 start.x + (end.x - start.x) * remainder,
@@ -583,39 +668,59 @@
             );
             ctx.lineTo(canvasPoint.x, canvasPoint.y);
         }
+
+        ctx.strokeStyle = colors.trajectoryGlow;
+        ctx.lineWidth = 7;
+        ctx.shadowColor = colors.trajectoryGlow;
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+
+        ctx.strokeStyle = colors.trajectory;
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 12;
         ctx.stroke();
         ctx.restore();
     }
 
-    function drawAltitudeGuide(projector) {
-        if (state.height <= 0) {
+    function drawAltitudeGuide(family, projector, index) {
+        if (family.state.height <= 0) {
             return;
         }
 
         const ground = projector.toCanvas(0, 0);
-        const launch = projector.toCanvas(0, state.height);
+        const launch = projector.toCanvas(0, family.state.height);
+        const guideOffset = index === 0 ? -3 : 3;
 
         ctx.save();
-        ctx.strokeStyle = "#ffc75a";
+        ctx.strokeStyle = family.colors.point;
         ctx.lineWidth = 2;
-        ctx.setLineDash([7, 6]);
-        ctx.shadowColor = "rgba(255, 199, 90, 0.28)";
+        ctx.setLineDash(index === 0 ? [7, 6] : [3, 5]);
+        ctx.shadowColor = family.colors.point;
         ctx.shadowBlur = 12;
         ctx.beginPath();
-        ctx.moveTo(ground.x, ground.y);
-        ctx.lineTo(launch.x, launch.y);
+        ctx.moveTo(ground.x + guideOffset, ground.y);
+        ctx.lineTo(launch.x + guideOffset, launch.y);
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.shadowBlur = 0;
-        drawCanvasLabel(`H ${formatMetric(state.height, "m", 0)}`, launch.x + 12, (launch.y + ground.y) / 2, "#ffc75a");
+        drawCanvasLabel(
+            `H${family.label} ${formatMetric(family.state.height, "m", 0)}`,
+            launch.x + 12 + index * 4,
+            (launch.y + ground.y) / 2 + index * 18,
+            family.colors.point
+        );
         ctx.restore();
     }
 
-    function drawVelocityVectors(calc, projector) {
-        const start = projector.toCanvas(0, state.height);
-        const minimumSpeed = Number(controls.v0.min);
-        const maximumSpeed = Number(controls.v0.max);
-        const speedRatio = clamp((calc.v0 - minimumSpeed) / (maximumSpeed - minimumSpeed), 0, 1);
+    function drawVelocityVectors(family, calculation, projector) {
+        const start = projector.toCanvas(0, family.state.height);
+        const minimumSpeed = Number(family.controls.v0.min);
+        const maximumSpeed = Number(family.controls.v0.max);
+        const speedRatio = clamp(
+            (calculation.v0 - minimumSpeed) / (maximumSpeed - minimumSpeed),
+            0,
+            1
+        );
         const minimumVectorLength = 34;
         const maximumVectorLength = clamp(projector.plot.width * 0.2, 96, 164);
         const vectorLength = minimumVectorLength
@@ -624,35 +729,36 @@
             ? view.defaultScale
             : view.scale;
         const zoomRatio = view.scale / Math.max(referenceScale, Number.EPSILON);
-        const velocityScale = (vectorLength * zoomRatio) / Math.max(calc.v0, 1);
-        const dx = calc.horizontalVelocity * velocityScale;
-        const dy = -calc.verticalVelocity * velocityScale;
+        const velocityScale = (vectorLength * zoomRatio) / Math.max(calculation.v0, 1);
+        const dx = calculation.horizontalVelocity * velocityScale;
+        const dy = -calculation.verticalVelocity * velocityScale;
         const horizontalEnd = { x: start.x + dx, y: start.y };
         const verticalEnd = { x: start.x, y: start.y + dy };
         const velocityEnd = { x: start.x + dx, y: start.y + dy };
+        const { display, colors, label } = family;
 
-        if (displayState.horizontalVector) {
-            drawArrow(start, horizontalEnd, "#5db7ff", [6, 5]);
+        if (display.horizontalVector) {
+            drawArrow(start, horizontalEnd, colors.horizontal, [6, 5], colors.vectorGlow);
         }
-        if (displayState.verticalVector) {
-            drawArrow(start, verticalEnd, "#a78bfa", [6, 5]);
+        if (display.verticalVector) {
+            drawArrow(start, verticalEnd, colors.vertical, [6, 5], colors.vectorGlow);
         }
-        if (displayState.launchVector) {
-            drawArrow(start, velocityEnd, "#ffc75a");
+        if (display.launchVector) {
+            drawArrow(start, velocityEnd, colors.launch, [], colors.vectorGlow);
         }
 
-        if (displayState.horizontalVector && Math.abs(dx) > 4) {
-            drawCanvasVariableLabel("0,x", horizontalEnd.x + 7, horizontalEnd.y + 18, "#5db7ff");
+        if (display.horizontalVector && Math.abs(dx) > 4) {
+            drawCanvasVariableLabel(`${label},x`, horizontalEnd.x + 7, horizontalEnd.y + 18, colors.horizontal);
         }
-        if (displayState.verticalVector && Math.abs(dy) > 4) {
-            drawCanvasVariableLabel("0,y", verticalEnd.x + 8, verticalEnd.y - 4, "#a78bfa");
+        if (display.verticalVector && Math.abs(dy) > 4) {
+            drawCanvasVariableLabel(`${label},y`, verticalEnd.x + 8, verticalEnd.y - 4, colors.vertical);
         }
-        if (displayState.launchVector && Math.hypot(dx, dy) > 4) {
-            drawCanvasVariableLabel("P0", velocityEnd.x + 8, velocityEnd.y - 8, "#ffc75a");
+        if (display.launchVector && Math.hypot(dx, dy) > 4) {
+            drawCanvasVariableLabel(`${label}0`, velocityEnd.x + 8, velocityEnd.y - 8, colors.launch);
         }
     }
 
-    function drawArrow(start, end, color, dash = []) {
+    function drawArrow(start, end, color, dash = [], glowColor = color) {
         const dx = end.x - start.x;
         const dy = end.y - start.y;
         if (Math.hypot(dx, dy) < 2) {
@@ -664,6 +770,8 @@
         ctx.strokeStyle = color;
         ctx.fillStyle = color;
         ctx.lineWidth = 2;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 8;
         ctx.setLineDash(dash);
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
@@ -679,13 +787,36 @@
         ctx.restore();
     }
 
-    function drawPoint(point, label, color, labelDx, labelDy) {
+    function drawLaunchPoints(projector) {
+        const pFamily = families.p;
+        const qFamily = families.q;
+        const sameHeight = Math.abs(pFamily.state.height - qFamily.state.height) < Number.EPSILON;
+
+        drawPoint(
+            projector.toCanvas(0, pFamily.state.height),
+            "P",
+            pFamily.colors.point,
+            -18,
+            -12,
+            sameHeight ? 8 : 6
+        );
+        drawPoint(
+            projector.toCanvas(0, qFamily.state.height),
+            "Q",
+            qFamily.colors.point,
+            sameHeight ? 14 : -18,
+            sameHeight ? 19 : -12,
+            sameHeight ? 4 : 6
+        );
+    }
+
+    function drawPoint(point, label, color, labelDx, labelDy, radius = 6) {
         ctx.save();
         ctx.fillStyle = color;
         ctx.shadowColor = color;
         ctx.shadowBlur = 16;
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 6, 0, tau);
+        ctx.arc(point.x, point.y, radius, 0, tau);
         ctx.fill();
         ctx.shadowBlur = 0;
         drawCanvasLabel(label, point.x + labelDx, point.y + labelDy, color);
@@ -717,7 +848,6 @@
         const subscriptWidth = ctx.measureText(subscript).width;
         const width = baseWidth + subscriptWidth + 18;
         const height = 25;
-
         roundedRect(ctx, x - 6, y - 17, width, height, 5);
         ctx.fillStyle = "rgba(6, 16, 30, 0.78)";
         ctx.fill();
@@ -736,48 +866,57 @@
         context.arcTo(x + width, y, x + width, y + height, r);
         context.arcTo(x + width, y + height, x, y + height, r);
         context.arcTo(x, y + height, x, y, r);
-        context.arcTo(x, y, x + width, y, r);
+        context.arcTo(x, y, x + r, y, r);
         context.closePath();
     }
 
-    function syncStateFromControls() {
-        state.v0 = Number(controls.v0.value);
-        state.alpha = Number(controls.alpha.value);
-        state.height = Number(controls.height.value);
+    function syncFamilyFromControls(family) {
+        family.state.v0 = Number(family.controls.v0.value);
+        family.state.alpha = Number(family.controls.alpha.value);
+        family.state.height = Number(family.controls.height.value);
     }
 
-    function cancelSolveAnimation() {
-        if (animationFrame !== null) {
-            window.cancelAnimationFrame(animationFrame);
-            animationFrame = null;
+    function cancelSolveAnimation(family) {
+        if (family.animationFrame !== null) {
+            window.cancelAnimationFrame(family.animationFrame);
+            family.animationFrame = null;
         }
-        solveButton.disabled = false;
+        family.solveButton.disabled = false;
     }
 
-    function setSolveStatus(stageText, cardText) {
-        outputs.stageStatus.textContent = stageText;
-        solveState.textContent = cardText;
+    function setSolveStatus(family, stageText, cardText) {
+        family.outputs.stageStatus.textContent = stageText;
+        family.solveState.textContent = cardText;
     }
 
-    function invalidateSolution(message = "參數已變更，請重新解算") {
-        cancelSolveAnimation();
-        solvedCalculation = null;
-        animationProgress = 0;
-        setSolveStatus(message, "READY");
+    function invalidateSolution(family, message = "參數已變更，請重新解算") {
+        cancelSolveAnimation(family);
+        family.solvedCalculation = null;
+        family.animationProgress = 0;
+        setSolveStatus(family, message, "READY");
     }
 
-    function startSolve() {
-        cancelSolveAnimation();
-        solvedCalculation = calculateTrajectory();
-        animationProgress = 0;
+    function startSolve(familyKey) {
+        const family = families[familyKey];
+        cancelSolveAnimation(family);
+        family.solvedCalculation = calculateTrajectory(family);
+        family.animationProgress = 0;
 
         const rect = canvas.getBoundingClientRect();
-        if (!hasSolvedOnce && !view.userAdjusted) {
-            fitViewToCalculation(solvedCalculation, rect.width, rect.height, false);
+        if (!hasStartedSolve && !view.userAdjusted) {
+            const pendingCalculations = getPendingCalculations();
+            const fitCalculations = familyOrder.map((key) => (
+                key === familyKey
+                    ? family.solvedCalculation
+                    : (families[key].solvedCalculation || pendingCalculations[key])
+            ));
+            fitViewToCalculations(fitCalculations, rect.width, rect.height, false);
+            view.defaultScale = view.scale;
         }
+        hasStartedSolve = true;
 
-        solveButton.disabled = true;
-        setSolveStatus("軌跡解算中", "SOLVING");
+        family.solveButton.disabled = true;
+        setSolveStatus(family, "軌跡解算中", "SOLVING");
         const duration = 1450;
         let startTime = null;
 
@@ -787,32 +926,29 @@
             }
 
             const linearProgress = clamp((timestamp - startTime) / duration, 0, 1);
-            animationProgress = 1 - (1 - linearProgress) ** 3;
+            family.animationProgress = 1 - (1 - linearProgress) ** 3;
             render();
 
             if (linearProgress < 1) {
-                animationFrame = window.requestAnimationFrame(animate);
+                family.animationFrame = window.requestAnimationFrame(animate);
                 return;
             }
 
-            animationProgress = 1;
-            animationFrame = null;
-            hasSolvedOnce = true;
-            solveButton.disabled = false;
-            setSolveStatus("落點位於地表 y = 0", "DONE");
+            family.animationProgress = 1;
+            family.animationFrame = null;
+            family.solveButton.disabled = false;
+            setSolveStatus(family, "落點位於地表 y = 0", "DONE");
             render();
         }
 
-        animationFrame = window.requestAnimationFrame(animate);
+        family.animationFrame = window.requestAnimationFrame(animate);
     }
 
     function zoomAtCanvasPoint(factor, canvasX, canvasY) {
         const rect = canvas.getBoundingClientRect();
         const beforeProjector = createProjector(rect.width, rect.height);
         const anchorBefore = beforeProjector.fromCanvas(canvasX, canvasY);
-
         view.scale = clamp(view.scale * factor, 0.01, 200);
-
         const afterProjector = createProjector(rect.width, rect.height);
         const anchorAfter = afterProjector.fromCanvas(canvasX, canvasY);
         view.centerX += anchorBefore.x - anchorAfter.x;
@@ -892,7 +1028,6 @@
         const deltaY = event.clientY - pan.lastY;
         pan.lastX = event.clientX;
         pan.lastY = event.clientY;
-
         view.centerX -= deltaX / view.scale;
         view.centerY += deltaY / view.scale;
         view.initialized = true;
@@ -914,75 +1049,84 @@
         canvas.classList.remove("is-panning");
     }
 
-    function setControls(nextState) {
-        Object.entries(nextState).forEach(([key, value]) => {
-            if (controls[key]) {
-                controls[key].value = String(value);
-            }
+    function setControls(nextStates) {
+        familyOrder.forEach((key) => {
+            const family = families[key];
+            const nextState = nextStates[key];
+            Object.entries(nextState).forEach(([stateKey, value]) => {
+                if (family.controls[stateKey]) {
+                    family.controls[stateKey].value = String(value);
+                }
+            });
+            syncFamilyFromControls(family);
+            invalidateSolution(family);
         });
-        syncStateFromControls();
-        invalidateSolution();
         render();
     }
 
-    function getPLineVisibility() {
+    function getLineVisibility(family) {
         return [
-            displayState.launchVector,
-            displayState.horizontalVector,
-            displayState.verticalVector,
-            displayState.trajectory,
+            family.display.launchVector,
+            family.display.horizontalVector,
+            family.display.verticalVector,
+            family.display.trajectory,
         ];
     }
 
-    function syncDisplayToggleStates() {
-        const visibility = getPLineVisibility();
+    function syncDisplayToggleStates(family) {
+        const visibility = getLineVisibility(family);
         const allVisible = visibility.every(Boolean);
         const anyVisible = visibility.some(Boolean);
-
-        displayToggleButtons.all.setAttribute(
+        family.displayToggleButtons.all.setAttribute(
             "aria-pressed",
             allVisible ? "true" : (anyVisible ? "mixed" : "false")
         );
-        displayToggleButtons.all.title = anyVisible
-            ? "隱藏 P 點所有向量及拋物線"
-            : "顯示 P 點所有向量及拋物線";
-        const componentsVisible = displayState.horizontalVector && displayState.verticalVector;
-        displayToggleButtons.components.setAttribute("aria-pressed", String(componentsVisible));
-        displayToggleButtons.components.title = componentsVisible
-            ? "隱藏 P 初速度 V P0 分量"
-            : "顯示 P 初速度 V P0 分量";
+        family.displayToggleButtons.all.title = anyVisible
+            ? `隱藏 ${family.label} 點所有向量及拋物線`
+            : `顯示 ${family.label} 點所有向量及拋物線`;
+
+        const componentsVisible = family.display.horizontalVector && family.display.verticalVector;
+        family.displayToggleButtons.components.setAttribute("aria-pressed", String(componentsVisible));
+        family.displayToggleButtons.components.title = componentsVisible
+            ? `隱藏 ${family.label} 初速度 V ${family.label}0 分量`
+            : `顯示 ${family.label} 初速度 V ${family.label}0 分量`;
     }
 
-    function setAllPLinesVisible(visible) {
-        displayState.launchVector = visible;
-        displayState.horizontalVector = visible;
-        displayState.verticalVector = visible;
-        displayState.trajectory = visible;
-        syncDisplayToggleStates();
+    function setAllLinesVisible(family, visible) {
+        family.display.launchVector = visible;
+        family.display.horizontalVector = visible;
+        family.display.verticalVector = visible;
+        family.display.trajectory = visible;
+        syncDisplayToggleStates(family);
         render();
     }
 
-    function toggleComponentVectors() {
-        const visible = !(displayState.horizontalVector && displayState.verticalVector);
-        displayState.horizontalVector = visible;
-        displayState.verticalVector = visible;
-        syncDisplayToggleStates();
+    function toggleComponentVectors(family) {
+        const visible = !(family.display.horizontalVector && family.display.verticalVector);
+        family.display.horizontalVector = visible;
+        family.display.verticalVector = visible;
+        syncDisplayToggleStates(family);
         render();
     }
 
-    Object.values(controls).forEach((control) => {
-        control.addEventListener("input", () => {
-            syncStateFromControls();
-            invalidateSolution();
-            render();
+    familyOrder.forEach((key) => {
+        const family = families[key];
+        Object.values(family.controls).forEach((control) => {
+            control.addEventListener("input", () => {
+                syncFamilyFromControls(family);
+                invalidateSolution(family);
+                render();
+            });
+        });
+        family.solveButton.addEventListener("click", () => startSolve(key));
+        family.displayToggleButtons.all.addEventListener("click", () => {
+            setAllLinesVisible(family, !getLineVisibility(family).some(Boolean));
+        });
+        family.displayToggleButtons.components.addEventListener("click", () => {
+            toggleComponentVectors(family);
         });
     });
 
-    solveButton.addEventListener("click", startSolve);
-    displayToggleButtons.all.addEventListener("click", () => {
-        setAllPLinesVisible(!getPLineVisibility().some(Boolean));
-    });
-    displayToggleButtons.components.addEventListener("click", toggleComponentVectors);
     controlPanelToggle.addEventListener("click", () => {
         setControlPanelCollapsed(!projectileLayout.classList.contains("is-control-collapsed"));
     });
@@ -1014,16 +1158,22 @@
     defaultScaleButton.addEventListener("click", restoreDefaultScale);
     fitViewButton.addEventListener("click", () => {
         const rect = canvas.getBoundingClientRect();
-        fitViewToCalculation(solvedCalculation || calculateTrajectory(), rect.width, rect.height, true);
+        fitViewToCalculations(getViewCalculations(), rect.width, rect.height, true);
         render();
     });
 
     document.getElementById("btn-reset").addEventListener("click", () => {
-        setControls({ v0: 50, alpha: 45, height: 0 });
+        setControls({
+            p: { v0: 50, alpha: 45, height: 0 },
+            q: { v0: 70, alpha: 60, height: 100 },
+        });
     });
 
     document.getElementById("btn-demo").addEventListener("click", () => {
-        setControls({ v0: 86, alpha: 58, height: 320 });
+        setControls({
+            p: { v0: 86, alpha: 58, height: 320 },
+            q: { v0: 120, alpha: 35, height: 120 },
+        });
     });
 
     function openModal(id) {
@@ -1069,8 +1219,11 @@
         stageResizeObserver.observe(stage);
     }
 
-    syncStateFromControls();
-    syncDisplayToggleStates();
-    setSolveStatus("等待解算", "READY");
+    familyOrder.forEach((key) => {
+        const family = families[key];
+        syncFamilyFromControls(family);
+        syncDisplayToggleStates(family);
+        setSolveStatus(family, "等待解算", "READY");
+    });
     resizeCanvas();
 })();
