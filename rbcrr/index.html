@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E">
+    <meta
+      name="description"
+      content="Project Aorta：大動脈計畫室，RBC RACER 血液循環教育遊戲正式穩定版"
+    >
+    <title>Project Aorta：大動脈計畫室 | RBC RACER</title>
+    <link rel="stylesheet" href="./css/main.css?v=stable-v1.1-20260715-r2">
+    <link rel="stylesheet" href="./css/hud.css?v=stable-v1.1-20260715-r2">
+    <link rel="stylesheet" href="./css/menu.css?v=stable-v1.1-20260715-r2">
+    <link rel="stylesheet" href="./css/cutscene.css?v=stable-v1.1-20260715-r2">
+  </head>
+  <body>
+    <main
+      id="game-root"
+      class="game-root"
+      data-game-state="BOOT"
+      data-release-status="STABLE"
+      data-release-version="1.1"
+      data-release-date="20260715"
+      data-intoxicated="false"
+      data-malaria-visual-active="false"
+    >
+      <canvas
+        id="game-canvas"
+        aria-label="Project Aorta：大動脈計畫室，RBC RACER 第一關體循環的腹部及下肢血管"
+        tabindex="0"
+      ></canvas>
+      <div class="screen-vignette" aria-hidden="true"></div>
+      <div class="screen-grain" aria-hidden="true"></div>
+      <div class="malaria-steam" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </div>
+
+      <section id="game-hud" class="game-hud" aria-label="遊戲狀態">
+        <header class="hud-brand">
+          <span class="hud-brand__identity">
+            <strong data-product-name>Project Aorta：大動脈計畫室</strong>
+            <small data-product-subtitle>RBC RACER</small>
+          </span>
+          <span class="hud-brand__release">
+            <b data-product-status>STABLE</b>
+            <small data-display-version>Version：1.1（20260715）</small>
+          </span>
+        </header>
+
+        <section class="circulation-card" aria-labelledby="circulation-title">
+          <header class="circulation-card__header">
+            <div>
+              <span>血液循環圖</span>
+              <strong id="circulation-title">體循環</strong>
+            </div>
+            <b id="circulation-route-code">第 1 關</b>
+          </header>
+          <div id="circulation-map" class="circulation-map"></div>
+          <footer class="circulation-card__legend" aria-label="循環圖圖例">
+            <span><i data-tone="arterial"></i> 充氧血</span>
+            <span><i data-tone="venous"></i> 減氧血</span>
+            <span><i data-tone="player"></i> 紅血球</span>
+          </footer>
+        </section>
+
+        <section class="vital-stack" aria-label="生命徵象">
+          <article class="vital-card vital-card--hp">
+            <div class="vital-card__heading">
+              <span>Cell integrity</span>
+              <strong>HP</strong>
+            </div>
+            <output id="hp-value">100 / 200</output>
+            <div id="hp-meter" class="vital-meter" style="--meter-fill: 0.5">
+              <span></span>
+            </div>
+          </article>
+
+          <article class="vital-card vital-card--bp">
+            <div class="vital-card__heading">
+              <span>Blood pressure</span>
+              <strong>BP</strong>
+            </div>
+            <output id="bp-value">100 mmHg</output>
+            <div
+              id="bp-meter"
+              class="vital-meter vital-meter--bp"
+              data-range="SAFE"
+              style="--meter-fill: 0.3846"
+            >
+              <span></span>
+            </div>
+            <small>SAFE BAND 80–130</small>
+          </article>
+        </section>
+
+        <section class="mission-strip" aria-label="目前關卡資訊">
+          <div class="mission-strip__location">
+            <span>Location</span>
+            <strong id="location-value">左心室</strong>
+          </div>
+          <div>
+            <span>Level</span>
+            <strong id="level-value">1 / 4</strong>
+          </div>
+          <div>
+            <span>Score</span>
+            <strong id="score-value">0</strong>
+          </div>
+          <div>
+            <span>Distance</span>
+            <strong id="distance-value">0.0 / 3000.0</strong>
+          </div>
+          <div>
+            <span>Velocity</span>
+            <strong id="speed-value">10 u/s</strong>
+          </div>
+        </section>
+
+        <aside
+          id="status-panel"
+          class="status-panel"
+          data-active="false"
+          aria-labelledby="status-panel-title"
+        >
+          <header>
+            <span>生理狀態監測</span>
+            <strong id="status-panel-title">目前狀態</strong>
+          </header>
+          <p id="status-empty">目前無異常狀態</p>
+          <div id="status-list" class="status-list" data-count="0"></div>
+          <section class="status-toolkit" aria-labelledby="toolkit-title">
+            <div class="status-toolkit__brand">
+              <span>KOSMOS TOOLKIT</span>
+              <strong id="toolkit-title">探真拓知酷</strong>
+            </div>
+            <div class="status-toolkit__controls">
+              <div><kbd>↑ ↓ ← →</kbd><span>紅血球橫向閃避</span></div>
+              <div><kbd>Z / X</kbd><span>提高／降低血壓</span></div>
+              <div><kbd>O / C</kbd><span>氣體交換 QTE</span></div>
+              <div><kbd>MOUSE</kbd><span>環視血管，不控制車身</span></div>
+              <div><kbd>ESC</kbd><span>解除滑鼠鎖定並暫停</span></div>
+            </div>
+          </section>
+        </aside>
+
+        <aside class="clock-card" data-active="false" aria-label="絕對計時器">
+          <span class="clock-card__signal" aria-hidden="true"></span>
+          <div>
+            <span>任務計時</span>
+            <strong id="timer-value">--.- s</strong>
+          </div>
+          <small id="timer-caption">點擊開始計時</small>
+        </aside>
+
+        <section
+          id="flight-instruments"
+          class="flight-instruments"
+          aria-label="紅血球姿態、高度與滑鼠視覺方向儀表"
+        >
+          <article class="instrument instrument--attitude">
+            <header><span>KEY / BODY</span><strong>ATTITUDE</strong></header>
+            <div class="attitude-display" aria-hidden="true">
+              <i class="attitude-display__axis"></i>
+              <b id="attitude-marker" class="attitude-display__marker"></b>
+            </div>
+            <footer>
+              <output id="attitude-x">X +0.00</output>
+              <output id="attitude-y">Y +0.00</output>
+            </footer>
+          </article>
+
+          <article class="instrument instrument--altitude">
+            <header><span>VESSEL</span><strong>ALT</strong></header>
+            <div class="altitude-tape" aria-hidden="true">
+              <span id="altitude-maximum">13.0</span>
+              <i><b id="altitude-marker"></b></i>
+              <span id="altitude-minimum">0.0</span>
+            </div>
+            <output id="altitude-value">6.5 u</output>
+            <small id="vessel-diameter">DIA 13.0</small>
+          </article>
+
+          <article class="instrument instrument--view">
+            <header><span>MOUSE / LOOK</span><strong>VIEW</strong></header>
+            <div class="view-direction" aria-hidden="true">
+              <span>N</span>
+              <i id="view-direction-needle"></i>
+              <b></b>
+            </div>
+            <footer>
+              <output id="view-heading">HDG 000°</output>
+              <output id="view-pitch">PITCH +0°</output>
+            </footer>
+          </article>
+        </section>
+
+        <div id="body-reticle" class="reticle reticle--body" aria-hidden="true">
+          <i></i>
+          <span>KEY / BODY</span>
+        </div>
+        <div id="view-reticle" class="reticle reticle--view" aria-hidden="true">
+          <i></i>
+          <span>MOUSE / VIEW</span>
+        </div>
+
+        <section
+          id="qte-panel"
+          class="qte-panel"
+          data-phase="IDLE"
+          data-outcome=""
+          aria-labelledby="qte-title"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          <header class="qte-panel__header">
+            <div>
+              <span>Gas exchange protocol</span>
+              <strong id="qte-title">氣體交換</strong>
+            </div>
+            <b id="qte-attempt">第 -- 次</b>
+          </header>
+          <p id="qte-instruction" class="qte-panel__instruction">
+            倒數結束前分別按滿 O 與 C，不必交替。
+          </p>
+          <div class="qte-panel__actions">
+            <article id="qte-oxygen-card" data-complete="false">
+              <kbd>O</kbd>
+              <div><span>OXYGEN / 氧氣</span><output id="qte-oxygen-count">0 / --</output></div>
+            </article>
+            <article id="qte-carbon-card" data-complete="false">
+              <kbd>C</kbd>
+              <div><span>CARBON DIOXIDE / 二氧化碳</span><output id="qte-carbon-count">0 / --</output></div>
+            </article>
+          </div>
+          <div class="qte-panel__deadline">
+            <span id="qte-timer">--.-- s</span>
+            <i><b id="qte-progress"></b></i>
+          </div>
+          <div id="qte-result" class="qte-panel__result" hidden>
+            <strong id="qte-result-title">交換完成</strong>
+            <span id="qte-result-copy">血液已完成氣體交換。</span>
+          </div>
+        </section>
+
+        <section
+          id="central-message"
+          class="central-message"
+          data-tone="INFO"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          <p id="central-message-kicker">循環導航</p>
+          <strong id="central-message-title">循環圖已同步</strong>
+          <p id="central-message-copy">循環圖已與紅血球位置同步。</p>
+        </section>
+
+        <footer class="control-ribbon" aria-label="操作說明">
+          <span><kbd>↑ ↓ ← →</kbd> 局部截面</span>
+          <span><kbd>Z</kbd> BP +</span>
+          <span><kbd>X</kbd> BP −</span>
+          <span><kbd>O / C</kbd> QTE</span>
+          <span><kbd>MOUSE</kbd> 只調整視角</span>
+          <span><kbd>ESC</kbd> 暫停</span>
+        </footer>
+      </section>
+
+      <section
+        id="cutscene-layer"
+        class="cutscene-layer"
+        aria-live="polite"
+        aria-label="劇情動畫"
+        hidden
+      ></section>
+
+      <section
+        id="game-overlay"
+        class="game-overlay"
+        data-mode="READY"
+        aria-labelledby="overlay-title"
+      >
+        <div id="overlay-index" class="overlay-index" aria-hidden="true">O₂</div>
+        <div class="overlay-panel">
+          <div class="overlay-product" aria-label="正式產品資訊">
+            <span data-product-name>Project Aorta：大動脈計畫室</span>
+            <strong data-product-subtitle>RBC RACER</strong>
+            <small><b data-product-status>STABLE</b> · <span data-display-version>Version：1.1（20260715）</span></small>
+          </div>
+          <p id="overlay-kicker" class="overlay-kicker">
+            紅血球循環任務
+          </p>
+          <h1 id="overlay-title">血液循環任務啟航</h1>
+          <p id="overlay-copy" class="overlay-copy">
+            四關將依序完成體循環與肺循環；請在時限內抵達，並完成組織或肺部的氣體交換。
+          </p>
+          <div class="overlay-controls" aria-label="核心操作">
+            <span><b>↑↓←→ / 十字</b> BODY</span>
+            <span><b>Z / X</b> PRESSURE</span>
+            <span><b>MOUSE / 圓形</b> VIEW</span>
+          </div>
+          <div id="overlay-actions" class="overlay-actions">
+            <button id="overlay-action" type="button">
+              開始遊戲並鎖定滑鼠視角
+            </button>
+            <button
+              id="overlay-restart-action"
+              class="overlay-action-secondary"
+              type="button"
+              hidden
+            >
+              從第一關重新開始
+            </button>
+            <button
+              id="overlay-menu-action"
+              class="overlay-action-secondary"
+              type="button"
+              hidden
+            >
+              回到主選單
+            </button>
+          </div>
+          <p class="overlay-note">
+            點擊開始後滑鼠會控制視線；按 ESC 可解除滑鼠控制並暫停。
+          </p>
+        </div>
+      </section>
+
+      <noscript class="noscript-message">
+        Project Aorta：大動脈計畫室需要啟用 JavaScript ES Modules。
+      </noscript>
+    </main>
+
+    <script src="./js/entryGuard.js?v=stable-v1.1-20260715-r2"></script>
+    <script type="module" src="./js/main.js?v=stable-v1.1-20260715-r2"></script>
+  </body>
+</html>
