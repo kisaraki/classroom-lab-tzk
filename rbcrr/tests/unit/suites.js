@@ -1,0 +1,68 @@
+import { registerBloodPressureDrivingTests } from "./bloodPressureDriving.test.js";
+import { registerBloodPressureHazardTests } from "./bloodPressureHazards.test.js?v=stable-v1.1-20260715-r2";
+import { registerCameraTests } from "./camera.test.js";
+import { registerCollisionTests } from "./collision.test.js?v=stable-v1.1-20260715-r2";
+import { registerCutsceneTests } from "./cutscene.test.js?v=stable-v1.1-20260715-r2";
+import { registerDeviceSupportTests } from "./deviceSupport.test.js?v=stable-v1.1-20260715-r2";
+import { registerEntityManagerTests } from "./entityManager.test.js?v=stable-v1.1-20260715-r2";
+import { registerEntityTypeTests } from "./entityTypes.test.js?v=stable-v1.1-20260715-r2";
+import { TestHarness } from "./TestHarness.js";
+import { registerEventBusTests } from "./eventBus.test.js";
+import { registerFlightInstrumentTests } from "./flightInstruments.test.js?v=stable-v1.1-20260715-r2";
+import { registerGameStateTests } from "./gameState.test.js?v=stable-v1.1-20260715-r2";
+import { registerInputTests } from "./input.test.js?v=stable-v1.1-20260715-r2";
+import { registerHudTests } from "./hud.test.js?v=stable-v1.1-20260715-r2";
+import { registerLevelManagerTests } from "./levelManager.test.js?v=stable-v1.1-20260715-r2";
+import { registerMinimapTests } from "./minimap.test.js?v=stable-v1.1-20260715-r2";
+import { registerMobileControlsTests } from "./mobileControls.test.js?v=stable-v1.1-20260715-r2";
+import { registerPlayerRbcTests } from "./playerRbc.test.js?v=stable-v1.1-20260715-r2";
+import { registerPointerLockTests } from "./pointerLock.test.js?v=stable-v1.1-20260715-r2";
+import { registerProceduralAssetTests } from "./proceduralAssets.test.js?v=stable-v1.1-20260715-r2";
+import { registerQteTests } from "./qte.test.js?v=stable-v1.1-20260715-r2";
+import { registerResourceLifecycleTests } from "./resourceLifecycle.test.js?v=stable-v1.1-20260715-r2";
+import { registerRunProgressionTests } from "./runProgression.test.js?v=stable-v1.1-20260715-r2";
+import { registerSchemaTests } from "./schemas.test.js?v=stable-v1.1-20260715-r2";
+import { registerSeededRandomTests } from "./seededRandom.test.js";
+import { registerStatusEffectTests } from "./statusEffects.test.js?v=stable-v1.1-20260715-r2";
+import { registerTimingTests } from "./timing.test.js?v=stable-v1.1-20260715-r2";
+import { registerTrackMathTests } from "./trackMath.test.js";
+import { registerVendorTests } from "./vendor.test.js";
+import { registerVesselTrackTests } from "./vesselTrack.test.js?v=stable-v1.1-20260715-r2";
+import { registerWoundChanceTests } from "./woundChance.test.js?v=stable-v1.1-20260715-r2";
+
+export function createStableTestHarness() {
+  const harness = new TestHarness();
+
+  registerTrackMathTests(harness);
+  registerTimingTests(harness);
+  registerWoundChanceTests(harness);
+  registerBloodPressureHazardTests(harness);
+  registerSeededRandomTests(harness);
+  registerEventBusTests(harness);
+  registerSchemaTests(harness);
+  registerLevelManagerTests(harness);
+  registerMinimapTests(harness);
+  registerHudTests(harness);
+  registerFlightInstrumentTests(harness);
+  registerVendorTests(harness);
+  registerBloodPressureDrivingTests(harness);
+  registerInputTests(harness);
+  registerMobileControlsTests(harness);
+  registerStatusEffectTests(harness);
+  registerQteTests(harness);
+  registerResourceLifecycleTests(harness);
+  registerCutsceneTests(harness);
+  registerRunProgressionTests(harness);
+  registerGameStateTests(harness);
+  registerPointerLockTests(harness);
+  registerVesselTrackTests(harness);
+  registerPlayerRbcTests(harness);
+  registerCameraTests(harness);
+  registerEntityTypeTests(harness);
+  registerProceduralAssetTests(harness);
+  registerEntityManagerTests(harness);
+  registerCollisionTests(harness);
+  registerDeviceSupportTests(harness);
+
+  return harness;
+}

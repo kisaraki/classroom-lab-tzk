@@ -39,7 +39,7 @@
   kicker.textContent = "啟動方式需要調整";
   title.textContent = "請使用本機伺服器";
   copy.textContent =
-    "瀏覽器會阻擋 ES Modules 由本機檔案直接執行。請從 Classroom Lab 專案根目錄啟動靜態伺服器，再開啟 rbcrr/rbcrr.html。";
+    "瀏覽器會阻擋 ES Modules 由本機檔案直接執行。請雙擊 start-local.cmd，或在此資料夾啟動靜態伺服器。";
   controls.hidden = true;
   action.hidden = false;
   action.disabled = true;
@@ -47,5 +47,5 @@
   restartAction.hidden = true;
   menuAction.hidden = true;
   note.textContent =
-    "本工具不需安裝前端套件，但必須透過 http:// 或 https:// 開啟。";
+    "一鍵啟動檔會開啟 127.0.0.1:8000，不需安裝前端套件。";
 })();
